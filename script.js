@@ -218,20 +218,17 @@ var defaultPlacesData = [
     { id: 208, lat: 49.5998679, lng: 18.012615, name: "Nový Jičín", storeNumber: "395", storeType: "HPM", visited: false }
 ];
 
+
+// ... ZDE NECHTE SVŮJ SEZNAM defaultPlacesData ...
+// VŠE POD NÍM SMAŽTE A VLOŽTE TOTO:
+
+// --- START APLIKACE ---
 var placesData = [];
 var userLocationMarker = null; 
+const cityCoordinates = { praha: { lat: 50.0755, lng: 14.4378 }, brno: { lat: 49.1951, lng: 16.6068 } };
 
-const cityCoordinates = {
-    praha: { lat: 50.0755, lng: 14.4378 },
-    brno: { lat: 49.1951, lng: 16.6068 }
-};
-
-// --- IKONY (Špendlíky) ---
-var commonIconSettings = {
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    shadowSize: [41, 41], shadowAnchor: [12, 41]
-};
+// Ikony (Obrázky)
+var commonIconSettings = { iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', shadowSize: [41, 41], shadowAnchor: [12, 41] };
 var redIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', ...commonIconSettings });
 var blueIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', ...commonIconSettings });
 var greenIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', ...commonIconSettings });
@@ -240,27 +237,22 @@ var greyIcon = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaf
 // Načtení dat
 var storedData = localStorage.getItem('mapPlaces');
 placesData = storedData ? JSON.parse(storedData) : defaultPlacesData;
-
 function savePlacesData() { localStorage.setItem('mapPlaces', JSON.stringify(placesData)); }
 
-// --- MAPOVÉ VRSTVY ---
+// Inicializace mapy
 var lightLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
 var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' });
 var satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
 
 var mymap = L.map('mapid', { center: [49.75, 15.5], zoom: 7, layers: [lightLayer] });
-
 var baseMaps = { "Klasická": lightLayer, "Tmavá": darkLayer, "Satelitní": satLayer };
 L.control.layers(baseMaps).addTo(mymap);
 var markerGroup = L.layerGroup().addTo(mymap);
 
-
-// --- PŘEPÍNÁNÍ TMAVÉHO REŽIMU ---
+// Noční režim
 function toggleDarkMode() {
-    var body = document.body;
-    var btn = document.getElementById('themeToggle');
+    var body = document.body; var btn = document.getElementById('themeToggle');
     body.classList.toggle('dark-mode');
-    
     if (body.classList.contains('dark-mode')) {
         btn.textContent = '☀️';
         if (mymap.hasLayer(lightLayer)) { mymap.removeLayer(lightLayer); mymap.addLayer(darkLayer); }
@@ -273,8 +265,7 @@ function toggleDarkMode() {
 }
 if (localStorage.getItem('theme') === 'dark') { toggleDarkMode(); }
 
-
-// --- POMOCNÉ FUNKCE ---
+// Pomocné funkce
 function createMarkerIcon(place) {
     if (place.visited) return greenIcon;
     if (place.storeType === 'HPM') return redIcon;
@@ -288,147 +279,77 @@ function updateProgressCounter() {
     if (el) el.textContent = `${count} / ${placesData.length}`;
 }
 
-// --- HLAVNÍ FUNKCE PRO SEZNAM ---
+// Render Seznamu
 function renderSidebarList() {
-    var listContainer = document.getElementById('sidebar-content');
-    if (!listContainer) return;
-    listContainer.innerHTML = ''; 
+    var list = document.getElementById('sidebar-content');
+    if (!list) return; list.innerHTML = ''; 
+    placesData.forEach(place => {
+        var itemDiv = document.createElement('div'); itemDiv.className = 'sidebar-item'; itemDiv.dataset.placeId = place.id; 
+        var checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = place.visited;
+        var label = document.createElement('label'); label.textContent = place.storeNumber ? `(${place.storeNumber}) ${place.name}` : place.name;
+        var distanceSpan = document.createElement('span'); distanceSpan.className = 'distance-result'; 
+        var measureBtn = document.createElement('button'); measureBtn.className = 'measure-btn'; measureBtn.textContent = '📏'; measureBtn.title = 'Změřit cestu';
 
-    placesData.forEach(function(place) {
-        var itemDiv = document.createElement('div');
-        itemDiv.className = 'sidebar-item';
-        itemDiv.dataset.placeId = place.id; 
+        itemDiv.append(checkbox, label, distanceSpan, measureBtn);
+        list.appendChild(itemDiv);
 
-        var checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = place.visited;
+        checkbox.addEventListener('click', e => { e.stopPropagation(); var p = placesData.find(x => x.id === place.id); p.visited = e.target.checked; savePlacesData(); updateProgressCounter(); filterList(); });
+        itemDiv.addEventListener('click', e => { if (['INPUT', 'BUTTON'].includes(e.target.tagName)) return; mymap.flyTo([place.lat, place.lng], 16); });
         
-        var label = document.createElement('label');
-        label.textContent = place.storeNumber ? `(${place.storeNumber}) ${place.name}` : place.name;
-
-        var distanceSpan = document.createElement('span');
-        distanceSpan.className = 'distance-result'; 
-
-        var measureButton = document.createElement('button');
-        measureButton.className = 'measure-btn';
-        measureButton.textContent = '📏'; 
-        measureButton.title = 'Změřit cestu autem';
-
-        itemDiv.append(checkbox, label, distanceSpan, measureButton);
-        listContainer.appendChild(itemDiv);
-
-        checkbox.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var p = placesData.find(x => x.id === place.id);
-            p.visited = e.target.checked;
-            savePlacesData(); updateProgressCounter(); filterList();
-        });
-
-        itemDiv.addEventListener('click', function(e) {
-            if (['INPUT', 'BUTTON'].includes(e.target.tagName)) return;
-            mymap.flyTo([place.lat, place.lng], 16);
-        });
-        
-        measureButton.addEventListener('click', function(e) {
-            e.stopPropagation(); 
-            var btn = this;
-            if (btn.classList.contains('active')) {
-                btn.classList.remove('active'); distanceSpan.textContent = ''; return;
-            } 
+        measureBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); var btn = this;
+            if (btn.classList.contains('active')) { btn.classList.remove('active'); distanceSpan.textContent = ''; return; } 
             btn.classList.add('active'); distanceSpan.textContent = '...';
-            
             let startKey = document.querySelector('input[name="startPoint"]:checked').value;
             let start = cityCoordinates[startKey];
             let url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${place.lng},${place.lat}?overview=false`;
-
             fetch(url).then(r => r.json()).then(d => {
                 if (d.code === 'Ok') {
                     let km = (d.routes[0].distance / 1000).toFixed(1);
-                    let mins = Math.round(d.routes[0].duration / 60);
-                    let h = Math.floor(mins / 60);
-                    let m = mins % 60;
+                    let m = Math.round(d.routes[0].duration / 60); let h = Math.floor(m / 60); m = m % 60;
                     distanceSpan.textContent = ` (${km} km, ${h > 0 ? h+'h '+m+'m' : m+' min'})`;
                 } else { distanceSpan.textContent = ' (chyba)'; }
             }).catch(() => distanceSpan.textContent = ' (chyba)');
         });
     });
 }
-// FUNKCE: Najde nejbližší nenavštívenou prodejnu
-function findNearest() {
-    if (!navigator.geolocation) {
-        alert("Váš prohlížeč nepodporuje geolokaci.");
-        return;
-    }
 
-    // Změna textu tlačítka, aby uživatel věděl, že se něco děje
-    var btn = document.getElementById('findNearestButton');
-    var originalText = btn.textContent;
-    btn.textContent = "Hledám...";
+// Render Mapy
+function renderMarkers() {
+    let query = document.getElementById('searchInput').value.toLowerCase();
+    let fVisited = document.getElementById('filterVisited').checked;
+    let fUnvisited = document.getElementById('filterUnvisited').checked;
+    let fHPM = document.getElementById('filterHPM').checked;
+    let fSM = document.getElementById('filterSM').checked;
+    let fZruseno = document.getElementById('filterZruseno').checked;
+    
+    markerGroup.clearLayers(); 
+    placesData.forEach(place => {
+        let txt = (place.name + " " + (place.storeNumber || "")).toLowerCase();
+        if (!txt.includes(query)) return;
+        if (!((place.visited && fVisited) || (!place.visited && fUnvisited))) return;
+        if (!((place.storeType === 'HPM' && fHPM) || (place.storeType === 'SM' && fSM) || ((place.storeType === 'zrušeno' || place.storeType === 'sklad') && fZruseno))) return;
 
-    navigator.geolocation.getCurrentPosition(function(position) {
-        var userLat = position.coords.latitude;
-        var userLng = position.coords.longitude;
-        var userLatLng = L.latLng(userLat, userLng);
+        var marker = L.marker([place.lat, place.lng], { icon: createMarkerIcon(place), placeId: place.id });
+        
+        let name = place.storeNumber ? `(${place.storeNumber}) ${place.name}` : place.name;
+        // SPRÁVNÝ NAVIGAČNÍ ODKAZ
+        let navLink = 'https://www.google.com/maps?q=' + place.lat + ',' + place.lng;
 
-        // 1. Zobrazíme polohu uživatele (jako funkce findMe)
-        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
-        var icon = L.divIcon({ className: 'gps-pulse', iconSize: [20,20], popupAnchor: [0,-10] });
-        userLocationMarker = L.marker([userLat, userLng], {icon: icon}).addTo(mymap).bindPopup("Tady jsi!").openPopup();
+        let content = `<b>${name}</b><br>Stav: ${place.visited ? 'Hotovo ✅' : 'Zbývá 📍'}<br><a href="${navLink}" target="_blank" style="display:inline-block;margin-top:5px;color:#fff;background:#007bff;padding:5px 10px;border-radius:4px;text-decoration:none;font-weight:bold;">Navigovat 🚗</a>`;
+        
+        marker.bindPopup(content); marker.bindTooltip(name); markerGroup.addLayer(marker);
 
-        // 2. Hledáme nejbližší
-        var nearestPlace = null;
-        var minDistance = Infinity;
-
-        placesData.forEach(function(place) {
-            // Ignorujeme NAVŠTÍVENÉ a ZRUŠENÉ
-            if (place.visited) return;
-            if (place.storeType === 'zrušeno' || place.storeType === 'sklad') return;
-
-            var placeLatLng = L.latLng(place.lat, place.lng);
-            var distance = userLatLng.distanceTo(placeLatLng); // Vzdálenost v metrech
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestPlace = place;
-            }
-        });
-
-        // 3. Výsledek
-        if (nearestPlace) {
-            // Přiblížíme mapu na nalezené místo
-            mymap.flyTo([nearestPlace.lat, nearestPlace.lng], 16);
-
-            // Musíme najít odpovídající marker na mapě, abychom otevřeli jeho bublinu
-            markerGroup.eachLayer(function(layer) {
-                if (layer.options.placeId === nearestPlace.id) {
-                    layer.openPopup();
-                }
-            });
+        marker.on('click', function() {
+            var p = placesData.find(x => x.id === this.options.placeId);
+            p.visited = !p.visited;
+            savePlacesData(); renderSidebarList(); updateProgressCounter();
+            this.setIcon(createMarkerIcon(p));
             
-            // Informace pro uživatele (vzdálenost v km)
-            var km = (minDistance / 1000).toFixed(1);
-            alert(`Nejbližší cíl: ${nearestPlace.name}\nVzdálenost: ${km} km (vzdušnou čarou)`);
-
-        } else {
-            alert("Gratulujeme! Všechny prodejny jsou již navštívené.");
-        }
-
-        // Vrátíme text tlačítka
-        btn.textContent = originalText;
-
-    }, function() {
-        alert("Chyba: Nelze získat vaši polohu.");
-        btn.textContent = originalText;
+            let newContent = content.replace(p.visited ? 'Zbývá 📍' : 'Hotovo ✅', p.visited ? 'Hotovo ✅' : 'Zbývá 📍');
+            this.bindPopup(newContent).openPopup();
+        });
     });
-}
-
-function resetMap() {
-    if (confirm("Opravdu resetovat celou mapu?")) {
-        placesData = defaultPlacesData;
-        placesData.forEach(p => p.visited = false);
-        savePlacesData();
-        renderSidebarList(); filterList(); updateProgressCounter();
-    }
 }
 
 function filterList() {
@@ -452,100 +373,57 @@ function filterList() {
             }
         });
     }
-    renderMarkers();
+    renderMarkers(); // Překreslíme i mapu
 }
 
-// --- VYKRESLOVÁNÍ NA MAPĚ (S OPRAVENOU NAVIGACÍ) ---
-function renderMarkers() {
-    let query = document.getElementById('searchInput').value.toLowerCase();
-    let fVisited = document.getElementById('filterVisited').checked;
-    let fUnvisited = document.getElementById('filterUnvisited').checked;
-    let fHPM = document.getElementById('filterHPM').checked;
-    let fSM = document.getElementById('filterSM').checked;
-    let fZruseno = document.getElementById('filterZruseno').checked;
-    
-    markerGroup.clearLayers(); 
-    placesData.forEach(place => {
-        let txt = (place.name + " " + (place.storeNumber || "")).toLowerCase();
-        if (!txt.includes(query)) return;
-        if (!((place.visited && fVisited) || (!place.visited && fUnvisited))) return;
-        if (!((place.storeType === 'HPM' && fHPM) || (place.storeType === 'SM' && fSM) || ((place.storeType === 'zrušeno' || place.storeType === 'sklad') && fZruseno))) return;
-
-        var marker = L.marker([place.lat, place.lng], { icon: createMarkerIcon(place), placeId: place.id });
-        
-        let name = place.storeNumber ? `(${place.storeNumber}) ${place.name}` : place.name;
-        
-        // 1. NAVIGAČNÍ ODKAZ (Při prvním načtení)
-        // Formát: https://www.google.com/maps/dir/?api=1&destination=LAT,LNG
-        let navLink = 'https://www.google.com/maps/dir/?api=1&destination=' + place.lat + ',' + place.lng;
-
-        let content = `<b>${name}</b><br>Stav: ${place.visited ? 'Hotovo ✅' : 'Zbývá 📍'}<br><a href="${navLink}" target="_blank" style="display:inline-block;margin-top:5px;color:#fff;background:#007bff;padding:5px 10px;border-radius:4px;text-decoration:none;font-weight:bold;">Navigovat 🚗</a>`;
-        
-        marker.bindPopup(content);
-        marker.bindTooltip(name);
-        markerGroup.addLayer(marker);
-
-        marker.on('click', function() {
-            var p = placesData.find(x => x.id === this.options.placeId);
-            p.visited = !p.visited;
-            savePlacesData(); renderSidebarList(); updateProgressCounter();
-            
-            this.setIcon(createMarkerIcon(p));
-            
-            // 2. NAVIGAČNÍ ODKAZ (Při kliknutí/změně stavu)
-            let newNavLink = 'https://www.google.com/maps/dir/?api=1&destination=' + p.lat + ',' + p.lng;
-            
-            let newContent = `<b>${name}</b><br>Stav: ${p.visited ? 'Hotovo ✅' : 'Zbývá 📍'}<br><a href="${newNavLink}" target="_blank" style="display:inline-block;margin-top:5px;color:#fff;background:#007bff;padding:5px 10px;border-radius:4px;text-decoration:none;font-weight:bold;">Navigovat 🚗</a>`;
-            
-            this.bindPopup(newContent).openPopup();
-        });
-    });
-}
-
+// GPS + Pulzující tečka
 function findMe() {
-    if (!navigator.geolocation) {
-        alert("Váš prohlížeč nepodporuje geolokaci.");
-        return;
-    }
-    console.log("Vyžaduji polohu...");
-
-    function success(position) {
-        var lat = position.coords.latitude;
-        var lng = position.coords.longitude;
-        console.log(`Poloha nalezena: ${lat}, ${lng}`);
-
-        // Pokud už značka existuje, smažeme ji
-        if (userLocationMarker) {
-            mymap.removeLayer(userLocationMarker);
-        }
-
-        // --- ZMĚNA ZDE: Vytvoření pulzující ikony ---
-        var pulseIcon = L.divIcon({
-            className: 'gps-pulse', // Toto odkazuje na styl v index.html
-            iconSize: [20, 20],
-            popupAnchor: [0, -10]   // Aby bublina nebyla přes tečku
-        });
-
-        userLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(mymap);
-        userLocationMarker.bindPopup("<b>Tady jsi!</b>").openPopup();
-        
-        // Přiblížíme mapu
+    if (!navigator.geolocation) { alert("GPS nedostupné"); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+        var lat = pos.coords.latitude; var lng = pos.coords.longitude;
+        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
+        // Vytvoření pulzující ikony
+        var icon = L.divIcon({ className: 'gps-pulse', iconSize: [20,20], popupAnchor: [0,-10] });
+        userLocationMarker = L.marker([lat, lng], {icon: icon}).addTo(mymap).bindPopup("Tady jsi!").openPopup();
         mymap.flyTo([lat, lng], 15);
-    }
-
-    function error() {
-        alert("Nelze získat vaši polohu. Ujistěte se, že jste povolili přístup.");
-        console.error("Chyba geolokace.");
-    }
-    
-    navigator.geolocation.getCurrentPosition(success, error);
+    }, () => alert("Chyba GPS"));
 }
 
+function findNearest() {
+    if (!navigator.geolocation) { alert("GPS nedostupné"); return; }
+    var btn = document.getElementById('findNearestButton'); var txt = btn.textContent; btn.textContent = "Hledám...";
+    navigator.geolocation.getCurrentPosition(pos => {
+        var uLat = pos.coords.latitude; var uLng = pos.coords.longitude;
+        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
+        var icon = L.divIcon({ className: 'gps-pulse', iconSize: [20,20], popupAnchor: [0,-10] });
+        userLocationMarker = L.marker([uLat, uLng], {icon: icon}).addTo(mymap).bindPopup("Tady jsi!").openPopup();
+        
+        var nearest = null; var minDst = Infinity;
+        placesData.forEach(p => {
+            if (p.visited || p.storeType === 'zrušeno' || p.storeType === 'sklad') return;
+            var dst = L.latLng(uLat, uLng).distanceTo(L.latLng(p.lat, p.lng));
+            if (dst < minDst) { minDst = dst; nearest = p; }
+        });
+        
+        if (nearest) {
+            mymap.flyTo([nearest.lat, nearest.lng], 16);
+            markerGroup.eachLayer(l => { if (l.options.placeId === nearest.id) l.openPopup(); });
+        } else { alert("Vše hotovo!"); }
+        btn.textContent = txt;
+    }, () => { alert("Chyba GPS"); btn.textContent = txt; });
+}
+
+function resetMap() {
+    if (confirm("Resetovat?")) {
+        placesData = defaultPlacesData;
+        placesData.forEach(p => p.visited = false);
+        savePlacesData(); renderSidebarList(); filterList(); updateProgressCounter();
+    }
+}
 function exportData() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(placesData)], {type: "application/json"}));
-    a.download = "albert_zaloha.json";
-    a.click();
+    a.download = "albert_zaloha.json"; a.click();
 }
 function importData(e) {
     const r = new FileReader();
@@ -560,11 +438,10 @@ function importData(e) {
 // --- SPUŠTĚNÍ ---
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('findMeButton')?.addEventListener('click', findMe);
+    document.getElementById('findNearestButton')?.addEventListener('click', findNearest);
     document.getElementById('resetButton')?.addEventListener('click', resetMap);
     document.getElementById('themeToggle')?.addEventListener('click', toggleDarkMode);
     document.getElementById('exportBtn')?.addEventListener('click', exportData);
-    document.getElementById('findNearestButton')?.addEventListener('click', findNearest);
-    document.getElementById('resetButton')?.addEventListener('click', resetMap);
     
     var imp = document.getElementById('importInput');
     document.getElementById('importBtn')?.addEventListener('click', () => imp.click());
@@ -573,14 +450,23 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchInput')?.addEventListener('keyup', filterList);
     ['filterVisited','filterUnvisited','filterHPM','filterSM','filterZruseno'].forEach(id => document.getElementById(id)?.addEventListener('click', filterList));
     
-    document.getElementById('toggleSidebar')?.addEventListener('click', function() {
-        var sb = document.getElementById('sidebar');
-        sb.classList.toggle('collapsed');
-        this.textContent = sb.classList.contains('collapsed') ? '☰' : '✖';
+    // OVLÁDÁNÍ PANELU (2 TLAČÍTKA)
+    var sidebar = document.getElementById('sidebar');
+    var openBtn = document.getElementById('openSidebar'); 
+    var closeBtn = document.getElementById('closeSidebar'); 
+
+    closeBtn?.addEventListener('click', function() {
+        sidebar.classList.add('collapsed');
+        if(openBtn) openBtn.style.display = 'flex';
+        setTimeout(() => mymap.invalidateSize(), 300);
+    });
+
+    openBtn?.addEventListener('click', function() {
+        sidebar.classList.remove('collapsed');
+        this.style.display = 'none';
         setTimeout(() => mymap.invalidateSize(), 300);
     });
     
-    // Třídění
     document.getElementById('sort-default')?.addEventListener('click', () => { placesData.sort((a,b)=>a.id-b.id); renderSidebarList(); filterList(); });
     document.getElementById('sort-name-asc')?.addEventListener('click', () => { placesData.sort((a,b)=>a.name.localeCompare(b.name)); renderSidebarList(); filterList(); });
     document.getElementById('sort-num-asc')?.addEventListener('click', () => { placesData.sort((a,b)=>{
@@ -588,5 +474,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return nA.localeCompare(nB, undefined, {numeric:true});
     }); renderSidebarList(); filterList(); });
 
+    // První start
     renderSidebarList(); filterList(); updateProgressCounter();
 });
