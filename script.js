@@ -604,10 +604,11 @@ function findMe() {
         var lng = position.coords.longitude;
         if (userLocationMarker) mymap.removeLayer(userLocationMarker);
         
-        // Modrý špendlík pro polohu uživatele
-        var userIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
-            ...commonIconSettings
+        // CSS kolečko polohu uživatele
+        var userIcon = L.divIcon({
+            className: 'gps-pulse', // Použije naši animovanou třídu
+            iconSize: [20, 20],
+            popupAnchor: [0, -10]
         });
 
         userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(mymap);
