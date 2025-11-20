@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Interaktivní Mapa Míst</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <style>
+        /* Základní styly pro celou stránku */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        /* 1. Hlavní kontejner, který rozdělí stránku */
+        #container {
+            display: flex; /* Použijeme Flexbox */
+            height: 100vh; /* Výška celé obrazovky */
+        }
+
+        /* 2. Boční panel (Sidebar) se seznamem */
+        #sidebar {
+            width: 350px; /* Pevná šířka pro seznam */
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-right: 2px solid #ccc;
+            display: flex;
+            flex-direction: column; /* Uspořádá prvky pod sebe */
+        }
+
+        /* 3. Mapa (zabere zbytek místa) */
+        #mapid {
+            flex: 1; 
+            height: 100%;
+        }
+        
+        /* Nadpis a počítadlo */
+        h2 {
+            margin-top: 5px;
+        }
+        #progress-counter {
+            font-weight: normal;
+            font-size: 0.8em;
+            color: #555;
+            margin-left: 5px;
+        }
+
+        /* Tlačítka */
+        #findMeButton {
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            font-size: 16px;
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #resetButton {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            font-size: 16px;
+            width: 100%;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        /* Filtry STAVU */
+        #filter-controls {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+        }
+        #filter-controls label {
+            margin-left: 5px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        #filter-controls input {
+            cursor: pointer;
+        }
+        
+        /* Filtry TYPU */
+        #filter-controls-type {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; 
+        }
+        #filter-controls-type label {
+            margin-left: 5px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        #filter-controls-type input {
+            cursor: pointer;
+        }
+        #filter-controls-type span {
+            margin-right: 5px;
+        }
+
+        /* STYL PRO NOVÝ BLOK MĚŘENÍ */
+        #distance-controls {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #e6f7ff; /* Světle modrá */
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+        }
+        #distance-controls label {
+            margin-left: 5px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        #distance-controls input {
+            cursor: pointer;
+        }
+        #distance-controls span {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        
+        /* Třídění */
+        #sort-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        #sort-controls span {
+            display: flex;
+            align-items: center;
+            margin-right: 5px;
+            font-size: 14px;
+        }
+        #sort-controls button {
+            flex-grow: 1;
+            margin: 0 2px;
+            padding: 6px 4px;
+            font-size: 14px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        #sort-controls button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Hledání */
+        #searchInput {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            box-sizing: border-box; 
+        }
+        
+        /* Seznam */
+        #sidebar-content {
+            flex-grow: 1; /* Zajistí, že seznam zabere zbytek místa */
+            overflow-y: auto; /* Přidá scrollbar jen pro seznam */
+        }
+        
+        /* Styly pro jednotlivé položky v seznamu */
+        .sidebar-item {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar-item label {
+            margin-left: 10px;
+            cursor: pointer;
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-width: 0;
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-item input {
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        /* 3. ÚPRAVA STYLU PRO .measure-btn */
+        .measure-btn {
+            padding: 2px 6px;
+            font-size: 16px;
+            margin-left: auto; 
+            background: #f0f0f0; /* Výchozí šedá */
+            border: 1px solid #ccc;
+            cursor: pointer;
+            border-radius: 4px;
+            flex-shrink: 0;
+            color: #555; /* Barva ikony */
+        }
+        .measure-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        /* TOTO JE NOVÝ BLOK, KTERÝ PŘIDÁTE HNED POD TO */
+        .measure-btn.active {
+            background-color: #ffc107; /* Zářivě žlutá */
+            border-color: #e0a800;
+            color: #000; /* Barva ikony */
+        }
+        .measure-btn.active:hover {
+            background-color: #ffca2c;
+        }
+        
+        .distance-result {
+            font-weight: bold;
+            color: #0056b3; 
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        
+        <div id="sidebar">
+            
+            <h2>Seznam míst (Alberty) <span id="progress-counter"></span></h2>
+
+            <button id="findMeButton">Najdi mě 📌</button>
+            <button id="resetButton">Resetovat stav mapy</button>
+            
+            <div id="filter-controls">
+                <span>Zobrazit: </span>
+                <input type="checkbox" id="filterVisited" checked>
+                <label for="filterVisited">Navštívené</label>
+                
+                <input type="checkbox" id="filterUnvisited" checked>
+                <label for="filterUnvisited">Nenavštívené</label>
+            </div>
+            
+            <div id="filter-controls-type">
+                <span>Typ: </span>
+                <input type="checkbox" id="filterHPM" checked>
+                <label for="filterHPM">HPM </label>
+                
+                <input type="checkbox" id="filterSM" checked>
+                <label for="filterSM">SM </label>
+                
+                <input type="checkbox" id="filterZruseno" checked>
+                <label for="filterZruseno">Zrušeno </label>
+            </div>
+            
+            <div id="distance-controls">
+                <span>Měřit od:</span>
+                <input type="radio" id="startPraha" name="startPoint" value="praha" checked>
+                <label for="startPraha">Praha</label>
+                
+                <input type="radio" id="startBrno" name="startPoint" value="brno">
+                <label for="startBrno">Brno</label>
+            </div>
+
+            <div id="sort-controls">
+                <span>Řadit:</span>
+                <button id="sort-default">Výchozí</button>
+                <button id="sort-name-asc">Název ↓</button>
+                <button id="sort-num-asc">Číslo ↓</button>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="Hledat (název, číslo)...">
+            
+            <div id="sidebar-content"></div> 
+            
+        </div> <div id="mapid"></div>
+
+    </div> <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
