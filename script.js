@@ -353,6 +353,74 @@ function renderSidebarList() {
         });
     });
 }
+// FUNKCE: Najde nejbližší nenavštívenou prodejnu
+function findNearest() {
+    if (!navigator.geolocation) {
+        alert("Váš prohlížeč nepodporuje geolokaci.");
+        return;
+    }
+
+    // Změna textu tlačítka, aby uživatel věděl, že se něco děje
+    var btn = document.getElementById('findNearestButton');
+    var originalText = btn.textContent;
+    btn.textContent = "Hledám...";
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        var userLat = position.coords.latitude;
+        var userLng = position.coords.longitude;
+        var userLatLng = L.latLng(userLat, userLng);
+
+        // 1. Zobrazíme polohu uživatele (jako funkce findMe)
+        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
+        var icon = L.divIcon({ className: 'gps-pulse', iconSize: [20,20], popupAnchor: [0,-10] });
+        userLocationMarker = L.marker([userLat, userLng], {icon: icon}).addTo(mymap).bindPopup("Tady jsi!").openPopup();
+
+        // 2. Hledáme nejbližší
+        var nearestPlace = null;
+        var minDistance = Infinity;
+
+        placesData.forEach(function(place) {
+            // Ignorujeme NAVŠTÍVENÉ a ZRUŠENÉ
+            if (place.visited) return;
+            if (place.storeType === 'zrušeno' || place.storeType === 'sklad') return;
+
+            var placeLatLng = L.latLng(place.lat, place.lng);
+            var distance = userLatLng.distanceTo(placeLatLng); // Vzdálenost v metrech
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestPlace = place;
+            }
+        });
+
+        // 3. Výsledek
+        if (nearestPlace) {
+            // Přiblížíme mapu na nalezené místo
+            mymap.flyTo([nearestPlace.lat, nearestPlace.lng], 16);
+
+            // Musíme najít odpovídající marker na mapě, abychom otevřeli jeho bublinu
+            markerGroup.eachLayer(function(layer) {
+                if (layer.options.placeId === nearestPlace.id) {
+                    layer.openPopup();
+                }
+            });
+            
+            // Informace pro uživatele (vzdálenost v km)
+            var km = (minDistance / 1000).toFixed(1);
+            alert(`Nejbližší cíl: ${nearestPlace.name}\nVzdálenost: ${km} km (vzdušnou čarou)`);
+
+        } else {
+            alert("Gratulujeme! Všechny prodejny jsou již navštívené.");
+        }
+
+        // Vrátíme text tlačítka
+        btn.textContent = originalText;
+
+    }, function() {
+        alert("Chyba: Nelze získat vaši polohu.");
+        btn.textContent = originalText;
+    });
+}
 
 function resetMap() {
     if (confirm("Opravdu resetovat celou mapu?")) {
@@ -435,14 +503,42 @@ function renderMarkers() {
 }
 
 function findMe() {
-    if (!navigator.geolocation) { alert("GPS nedostupné"); return; }
-    navigator.geolocation.getCurrentPosition(pos => {
-        var lat = pos.coords.latitude; var lng = pos.coords.longitude;
-        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
-        var icon = L.divIcon({ className: 'gps-pulse', iconSize: [20,20], popupAnchor: [0,-10] });
-        userLocationMarker = L.marker([lat, lng], {icon: icon}).addTo(mymap).bindPopup("Tady jsi!").openPopup();
+    if (!navigator.geolocation) {
+        alert("Váš prohlížeč nepodporuje geolokaci.");
+        return;
+    }
+    console.log("Vyžaduji polohu...");
+
+    function success(position) {
+        var lat = position.coords.latitude;
+        var lng = position.coords.longitude;
+        console.log(`Poloha nalezena: ${lat}, ${lng}`);
+
+        // Pokud už značka existuje, smažeme ji
+        if (userLocationMarker) {
+            mymap.removeLayer(userLocationMarker);
+        }
+
+        // --- ZMĚNA ZDE: Vytvoření pulzující ikony ---
+        var pulseIcon = L.divIcon({
+            className: 'gps-pulse', // Toto odkazuje na styl v index.html
+            iconSize: [20, 20],
+            popupAnchor: [0, -10]   // Aby bublina nebyla přes tečku
+        });
+
+        userLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(mymap);
+        userLocationMarker.bindPopup("<b>Tady jsi!</b>").openPopup();
+        
+        // Přiblížíme mapu
         mymap.flyTo([lat, lng], 15);
-    }, () => alert("Chyba GPS"));
+    }
+
+    function error() {
+        alert("Nelze získat vaši polohu. Ujistěte se, že jste povolili přístup.");
+        console.error("Chyba geolokace.");
+    }
+    
+    navigator.geolocation.getCurrentPosition(success, error);
 }
 
 function exportData() {
@@ -467,6 +563,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('resetButton')?.addEventListener('click', resetMap);
     document.getElementById('themeToggle')?.addEventListener('click', toggleDarkMode);
     document.getElementById('exportBtn')?.addEventListener('click', exportData);
+    document.getElementById('findNearestButton')?.addEventListener('click', findNearest);
+    document.getElementById('resetButton')?.addEventListener('click', resetMap);
     
     var imp = document.getElementById('importInput');
     document.getElementById('importBtn')?.addEventListener('click', () => imp.click());

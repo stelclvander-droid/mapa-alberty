@@ -170,7 +170,37 @@
         @media (max-width: 600px) {
             #sidebar { width: 100%; position: absolute; }
         }
+        /* Animace pulzování pro GPS */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
+
+        .gps-pulse {
+            background-color: #007bff;
+            border: 2px solid white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            width: 20px !important;
+            height: 20px !important;
+            margin-left: -10px !important; /* Vycentrování */
+            margin-top: -10px !important;
+        }
+        #findNearestButton {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2); /* Fialový gradient */
+            color: white;
+            width: 100%;
+            margin-bottom: 8px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(156, 39, 176, 0.3); /* Jemný fialový stín */
+        }
+        #findNearestButton:hover {
+            background: linear-gradient(135deg, #7B1FA2, #4A148C); /* Tmavší při najetí */
+            transform: translateY(-1px);
+        }
     </style>
+
 </head>
 <body>
     <div id="container">
@@ -180,8 +210,10 @@
                 <button id="themeToggle" title="Přepnout tmavý režim">🌙</button>
             </div>
 
-            <button id="findMeButton">📍 Najdi mě</button>
-            
+            <button id="findMeButton">🛰️ Najdi mě</button>
+            <div class="action-row">
+    <button id="findNearestButton">🗺️ Nejbližší další</button>
+</div>
             <div id="data-controls">
                 <button id="exportBtn" class="data-btn">💾 Uložit</button>
                 <button id="importBtn" class="data-btn">📂 Nahrát</button>
