@@ -646,6 +646,65 @@ function sortAndRender(sortType) {
     renderSidebarList();
     filterList();
 }
+// NOVÁ FUNKCE: Export dat (stažení souboru)
+function exportData() {
+    // 1. Převedeme data na text
+    const dataStr = JSON.stringify(placesData);
+    
+    // 2. Vytvoříme virtuální soubor
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    
+    // 3. Vytvoříme odkaz a klikneme na něj
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "moje_mapa_albert_zaloha.json"; // Název souboru
+    document.body.appendChild(a);
+    a.click();
+    
+    // 4. Úklid
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// NOVÁ FUNKCE: Import dat (nahrání souboru)
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            // 1. Přečteme data ze souboru
+            const importedData = JSON.parse(e.target.result);
+            
+            // 2. Jednoduchá kontrola, jestli je to pole
+            if (Array.isArray(importedData)) {
+                // 3. Přepíšeme naše data
+                placesData = importedData;
+                savePlacesData(); // Uložíme do prohlížeče
+                
+                // 4. Vše překreslíme
+                renderSidebarList();
+                updateProgressCounter();
+                filterList(); 
+                
+                alert("Záloha byla úspěšně nahrána! ✅");
+            } else {
+                alert("Chyba: Soubor nemá správný formát.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Chyba při čtení souboru. Je to platný JSON?");
+        }
+        
+        // Vyčistíme input, aby šel stejný soubor nahrát znovu
+        event.target.value = ''; 
+    };
+    
+    reader.readAsText(file);
+}
 
 
 // -----------------------------------------------------------------
@@ -697,4 +756,31 @@ document.addEventListener('DOMContentLoaded', function() {
     renderSidebarList();
     filterList(); // filterList() zavolá renderMarkers()
     updateProgressCounter();
+
+    // ... (kód pro tlačítko Reset) ...
+
+    // --- NOVÉ: PŘIPOJENÍ IMPORTU A EXPORTU ---
+    
+    // Export
+    var exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) { 
+        exportBtn.addEventListener('click', exportData); 
+    }
+
+    // Import (kliknutí na tlačítko otevře skrytý input)
+    var importBtn = document.getElementById('importBtn');
+    var importInput = document.getElementById('importInput');
+    
+    if (importBtn && importInput) {
+        // Kliknutí na hezké tlačítko -> klikne na skryté pole pro soubor
+        importBtn.addEventListener('click', function() {
+            importInput.click();
+        });
+        // Když uživatel vybere soubor -> spustí se funkce importData
+        importInput.addEventListener('change', importData);
+    }
+    
+    // --- KONEC NOVÉ ČÁSTI ---
+
+    // ... (kód pro searchInput a zbytek) ...
 });

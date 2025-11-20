@@ -232,6 +232,20 @@
             margin-left: 8px;
             flex-shrink: 0;
         }
+        /* STYL PRO DATOVÁ TLAČÍTKA */
+.data-btn {
+    flex-grow: 1; /* Roztáhnou se na šířku */
+    padding: 8px;
+    font-size: 14px;
+    background-color: #6c757d; /* Šedá barva */
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.data-btn:hover {
+    background-color: #5a6268;
+}
     </style>
 </head>
 <body>
@@ -244,6 +258,11 @@
 
             <button id="findMeButton">Najdi mě 📌</button>
             <button id="resetButton">Resetovat stav mapy</button>
+            <div id="data-controls" style="margin-bottom: 15px; display: flex; gap: 5px;">
+            <button id="exportBtn" class="data-btn">Uložit 💾</button>
+            <button id="importBtn" class="data-btn">Nahrát 📂</button>
+            <input type="file" id="importInput" style="display: none;" accept=".json">
+            </div>
             
             <div id="filter-controls">
                 <span>Zobrazit: </span>
