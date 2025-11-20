@@ -173,9 +173,24 @@
             border-top: 1px solid #e9ecef;
         }
         .sidebar-item {
-            padding: 8px 5px; border-bottom: 1px solid #f1f1f1; display: flex; align-items: center;
+            background: white;
+            margin-bottom: 8px; /* Mezera mezi kartami */
+            padding: 12px;      /* Větší vnitřní prostor */
+            border-radius: 8px; /* Kulaté rohy */
+            border: 1px solid #eee; /* Velmi jemný okraj */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); /* Jemný stín */
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease; /* Plynulá animace */
         }
-        .sidebar-item:hover { background-color: #f8f9fa; }
+
+        /* Efekt při najetí myší - kartička "vyskočí" */
+        .sidebar-item:hover {
+            transform: translateY(-2px); /* Posun nahoru */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* Větší stín */
+            border-color: #007bff; /* Modré zvýraznění okraje */
+            z-index: 1; /* Aby byla nad ostatními */
+        }
         .sidebar-item label {
             flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin-left: 8px;
         }
