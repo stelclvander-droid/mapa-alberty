@@ -179,11 +179,11 @@ var defaultPlacesData = [
     { id: 169, lat: 50.0050999, lng: 14.4054409, name: "Praha - Vltava", storeNumber: "755", storeType: "SM", visited: false },
     { id: 170, lat: 50.077301, lng: 14.4539268, name: "Praha - Vinohrady", storeNumber: "767", storeType: "SM", visited: false },
     { id: 171, lat: 50.078494, lng: 14.453308, name: "Praha - Bezovka", storeNumber: "769", storeType: "SM", visited: false },
-    { id: 172, lat: 49.271373, lng: 16.993683, name: "Vyškov - Na Hraničkách", storeNumber: "774", storeType: "SM", visited: false },
+    { id: 172, lat: 49.281700340775956, lng: 16.98614511616937, name: "Vyškov - Na Hraničkách", storeNumber: "774", storeType: "SM", visited: false },
     { id: 173, lat: 50.046396, lng: 15.748366, name: "Pardubice - Poděbradská", storeNumber: "803", storeType: "HPM", visited: false },
-    { id: 174, lat: 49.691771, lng: 18.349171, name: "Frýdek Místek - Hlavní", storeNumber: "804", storeType: "HPM", visited: false },
+    { id: 174, lat: 49.678039971984376, lng: 18.36890191853224, name: "Frýdek Místek - Hlavní", storeNumber: "804", storeType: "HPM", visited: false },
     { id: 175, lat: 50.424364, lng: 14.921820, name: "Mladá Boleslav - Jičínská", storeNumber: "806", storeType: "HPM", visited: false },
-    { id: 176, lat: 49.213329, lng: 17.643666, name: "Zlín - Prštné", storeNumber: "807", storeType: "HPM", visited: false },
+    { id: 176, lat: 49.220634694195766, lng: 17.6411129676269, name: "Zlín - Prštné", storeNumber: "807", storeType: "HPM", visited: false },
     { id: 177, lat: 49.789212, lng: 18.252084, name: "Ostrava - Dubina", storeNumber: "808", storeType: "HPM", visited: false },
     { id: 178, lat: 50.640201, lng: 13.840748, name: "Teplice", storeNumber: "810", storeType: "HPM", visited: false },
     { id: 179, lat: 50.072236, lng: 14.542289, name: "Praha - Štěrboholy", storeNumber: "812", storeType: "zrušeno", visited: false },
@@ -248,17 +248,37 @@ function savePlacesData() {
 }
 
 
-// Inicializace mapy
-var mymap = L.map('mapid').setView([49.75, 15.5], 7); 
+// --- NOVÁ INICIALIZACE MAPY S VRSTVAMI ---
 
-// Přidání dlaždic
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// 1. Definujeme vrstvy
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
-}).addTo(mymap);
+});
 
-// Vytvoření proměnné pro skupinu markerů
-var markerGroup = L.layerGroup().addTo(mymap); 
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
 
+// 2. Vytvoříme mapu a nastavíme výchozí vrstvu (OSM)
+var mymap = L.map('mapid', {
+    center: [49.75, 15.5],
+    zoom: 7,
+    layers: [osmLayer] // Začínáme s klasickou mapou
+});
+
+// 3. Vytvoříme přepínač vrstev
+var baseMaps = {
+    "Klasická mapa": osmLayer,
+    "Satelitní mapa": satelliteLayer
+};
+
+// 4. Přidáme přepínač do pravého horního rohu
+L.control.layers(baseMaps).addTo(mymap);
+
+var markerGroup = L.layerGroup().addTo(mymap);
+
+
+// --- KONEC NOVÉ INICIALIZACE ---
 
 // Funkce pro vytvoření ikon (Emoji verze)
 function createMarkerIcon(place) {
