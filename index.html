@@ -5,247 +5,254 @@
     <title>Interaktivní Mapa Míst</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* Základní styly pro celou stránku */
+        /* --- 1. ZÁKLADNÍ NASTAVENÍ --- */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif; /* Moderní font */
+            color: #333;
+            background-color: #f4f7f6;
         }
 
-        /* 1. Hlavní kontejner, který rozdělí stránku */
+        /* Hlavní kontejner */
         #container {
-            display: flex; /* Použijeme Flexbox */
-            height: 100vh; /* Výška celé obrazovky */
-        }
-
-        /* 2. Boční panel (Sidebar) se seznamem */
-        #sidebar {
-            width: 350px; /* Pevná šířka pro seznam */
-            background-color: #f4f4f4;
-            padding: 10px;
-            border-right: 2px solid #ccc;
             display: flex;
-            flex-direction: column; /* Uspořádá prvky pod sebe */
+            height: 100vh;
+            overflow: hidden; /* Zabrání dvojitému scrollbaru */
         }
 
-        /* 3. Mapa (zabere zbytek místa) */
+        /* --- 2. BOČNÍ PANEL (SIDEBAR) --- */
+        #sidebar {
+            width: 360px;
+            background-color: #ffffff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1); /* Stín vržený na mapu */
+            z-index: 1000; /* Aby byl stín nad mapou */
+        }
+
+        /* Mapa */
         #mapid {
-            flex: 1; 
+            flex: 1;
             height: 100%;
         }
-        
-        /* Nadpis a počítadlo */
+
+        /* Nadpis */
         h2 {
-            margin-top: 5px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         #progress-counter {
-            font-weight: normal;
-            font-size: 0.8em;
-            color: #555;
-            margin-left: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: #495057;
         }
 
-        /* Tlačítka */
+        /* --- 3. TLAČÍTKA (Společný styl) --- */
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease; /* Plynulá animace při najetí */
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        button:active {
+            transform: translateY(1px); /* Efekt stisknutí */
+            box-shadow: none;
+        }
+
+        /* Konkrétní tlačítka */
         #findMeButton {
-            margin-bottom: 10px;
-            padding: 10px 15px;
-            font-size: 16px;
-            width: 100%;
-            background-color: #007bff;
+            background-color: #007bff; /* Jasná modrá */
             color: white;
-            border: none;
-            cursor: pointer;
-        }
-        #resetButton {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            font-size: 16px;
             width: 100%;
-            background-color: #d9534f;
-            color: white;
-            border: none;
-            cursor: pointer;
         }
-        
-        /* Filtry STAVU */
-        #filter-controls {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-            background-color: #eee;
-            border-radius: 4px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-        }
-        #filter-controls label {
-            margin-left: 5px;
-            margin-right: 15px;
-            cursor: pointer;
-        }
-        #filter-controls input {
-            cursor: pointer;
-        }
-        
-        /* Filtry TYPU */
-        #filter-controls-type {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-            background-color: #eee;
-            border-radius: 4px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap; 
-        }
-        #filter-controls-type label {
-            margin-left: 5px;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        #filter-controls-type input {
-            cursor: pointer;
-        }
-        #filter-controls-type span {
-            margin-right: 5px;
-        }
+        #findMeButton:hover { background-color: #0056b3; }
 
-        /* STYL PRO NOVÝ BLOK MĚŘENÍ */
-        #distance-controls {
+        #resetButton {
+            background-color: #fff;
+            border: 1px solid #dc3545;
+            color: #dc3545;
             width: 100%;
-            margin-bottom: 10px;
+        }
+        #resetButton:hover { background-color: #dc3545; color: white; }
+
+        /* Sekce pro export/import */
+        #data-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .data-btn {
+            flex-grow: 1;
+            background-color: #6c757d;
+            color: white;
             padding: 8px;
-            background-color: #e6f7ff; /* Světle modrá */
-            border-radius: 4px;
-            box-sizing: border-box;
+        }
+        .data-btn:hover { background-color: #5a6268; }
+
+        /* --- 4. FILTRY A OVLÁDÁNÍ --- */
+        
+        /* Boxy pro filtry (šedé pozadí) */
+        #filter-controls, #filter-controls-type, #distance-controls {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
             display: flex;
             align-items: center;
-        }
-        #distance-controls label {
-            margin-left: 5px;
-            margin-right: 15px;
-            cursor: pointer;
-        }
-        #distance-controls input {
-            cursor: pointer;
-        }
-        #distance-controls span {
-            margin-right: 5px;
-            font-weight: bold;
+            flex-wrap: wrap;
         }
         
+        /* Odsazení checkboxů */
+        input[type="checkbox"], input[type="radio"] {
+            margin-right: 6px;
+            margin-left: 12px;
+            cursor: pointer;
+            accent-color: #007bff; /* Modré zaškrtávátko */
+        }
+        /* První checkbox bez odsazení zleva */
+        input[type="checkbox"]:first-of-type, input[type="radio"]:first-of-type {
+            margin-left: 5px;
+        }
+        
+        label { cursor: pointer; }
+        span { font-weight: 600; color: #495057; margin-right: 8px; }
+
         /* Třídění */
         #sort-controls {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        #sort-controls span {
-            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
             align-items: center;
-            margin-right: 5px;
-            font-size: 14px;
         }
         #sort-controls button {
+            margin-bottom: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            padding: 6px 10px;
+            font-size: 13px;
             flex-grow: 1;
-            margin: 0 2px;
-            padding: 6px 4px;
-            font-size: 14px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            cursor: pointer;
         }
-        #sort-controls button:hover {
-            background-color: #e0e0e0;
-        }
+        #sort-controls button:hover { background: #e9ecef; }
 
-        /* Hledání */
+        /* Vyhledávání */
         #searchInput {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
             margin-bottom: 15px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            box-sizing: border-box; 
+            outline: none;
         }
-        
-        /* Seznam */
+        #searchInput:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,.25);
+        }
+
+        /* --- 5. SEZNAM POLOŽEK --- */
         #sidebar-content {
-            flex-grow: 1; /* Zajistí, že seznam zabere zbytek místa */
-            overflow-y: auto; /* Přidá scrollbar jen pro seznam */
+            flex-grow: 1;
+            overflow-y: auto;
+            border-top: 1px solid #e9ecef;
         }
-        
-        /* Styly pro jednotlivé položky v seznamu */
+
+        /* Jedna položka */
         .sidebar-item {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            border-bottom: 1px solid #f1f1f1;
             display: flex;
             align-items: center;
+            transition: background 0.2s;
         }
+        .sidebar-item:hover {
+            background-color: #f8f9fa; /* Jemné podbarvení při najetí */
+        }
+        
+        /* Text položky */
         .sidebar-item label {
-            margin-left: 10px;
-            cursor: pointer;
+            margin-left: 12px;
+            font-size: 14px;
             flex-grow: 1;
-            flex-shrink: 1;
-            min-width: 0;
-            white-space: nowrap; 
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .sidebar-item input {
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        /* 3. ÚPRAVA STYLU PRO .measure-btn */
+
+        /* Tlačítka v položce (Pravítko) */
         .measure-btn {
-            padding: 2px 6px;
-            font-size: 16px;
-            margin-left: auto; 
-            background: #f0f0f0; /* Výchozí šedá */
-            border: 1px solid #ccc;
-            cursor: pointer;
-            border-radius: 4px;
+            background: white;
+            border: 1px solid #dee2e6;
+            color: #adb5bd; /* Šedá ikona když je neaktivní */
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: 50%; /* Kulaté tlačítko */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto; /* Zarovnání doprava */
+            margin-bottom: 0;
             flex-shrink: 0;
-            color: #555; /* Barva ikony */
         }
         .measure-btn:hover {
-            background: #e0e0e0;
+            background: #e9ecef;
+            color: #495057;
         }
-        
-        /* TOTO JE NOVÝ BLOK, KTERÝ PŘIDÁTE HNED POD TO */
         .measure-btn.active {
-            background-color: #ffc107; /* Zářivě žlutá */
-            border-color: #e0a800;
-            color: #000; /* Barva ikony */
-        }
-        .measure-btn.active:hover {
-            background-color: #ffca2c;
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #212529;
         }
         
+        /* Výsledek vzdálenosti */
         .distance-result {
+            font-size: 13px;
             font-weight: bold;
-            color: #0056b3; 
-            margin-left: 8px;
+            color: #007bff;
+            margin-right: 10px;
+            margin-left: 10px;
             flex-shrink: 0;
         }
-        /* STYL PRO DATOVÁ TLAČÍTKA */
-.data-btn {
-    flex-grow: 1; /* Roztáhnou se na šířku */
-    padding: 8px;
-    font-size: 14px;
-    background-color: #6c757d; /* Šedá barva */
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-}
-.data-btn:hover {
-    background-color: #5a6268;
-}
+
+        /* --- 6. VYLEPŠENÝ POSUVNÍK (Scrollbar) --- */
+        /* Pro Chrome, Edge, Safari */
+        #sidebar-content::-webkit-scrollbar, #sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        #sidebar-content::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        #sidebar-content::-webkit-scrollbar-thumb {
+            background: #ccc; 
+            border-radius: 4px;
+        }
+        #sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: #aaa; 
+        }
     </style>
 </head>
 <body>

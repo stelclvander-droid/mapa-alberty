@@ -279,30 +279,57 @@ var markerGroup = L.layerGroup().addTo(mymap);
 
 
 // --- KONEC NOVÉ INICIALIZACE ---
+// --- DEFINICE VLASTNÍCH OBRÁZKOVÝCH IKON ---
 
-// Funkce pro vytvoření ikon (Emoji verze)
+// Společné nastavení pro všechny špendlíky (velikost, stín)
+var commonIconSettings = {
+    iconSize: [25, 41], // Velikost obrázku špendlíku (šířka, výška)
+    iconAnchor: [12, 41], // Který bod obrázku ukazuje na mapu (spodní špička)
+    popupAnchor: [1, -34], // Kde se otevře bublina nad špendlíkem
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    shadowSize: [41, 41],
+    shadowAnchor: [12, 41]
+};
+
+// 1. Červený špendlík (pro HPM)
+var redIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    ...commonIconSettings // ... zkopíruje společné nastavení
+});
+
+// 2. Modrý špendlík (pro SM a ostatní)
+var blueIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+    ...commonIconSettings
+});
+
+// 3. Zelený špendlík (NAVŠTÍVENO - Hotovo)
+var greenIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    ...commonIconSettings
+});
+
+// 4. Šedý špendlík (Zrušeno)
+var greyIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
+    ...commonIconSettings
+});
+
+// -------------------------------------------
+// NOVÁ FUNKCE: VÝBĚR OBRÁZKOVÉ IKONY
 function createMarkerIcon(place) {
-    let iconHtml = '';
-
     if (place.visited) {
-        iconHtml = '✅';
-    } else {
-        if (place.storeType === 'HPM') {
-            iconHtml = '🔴'; // Červený kruh
-        } else if (place.storeType === 'SM') {
-            iconHtml = '🔵'; // Modrý kruh
-        } else if (place.storeType === 'zrušeno' || place.storeType === 'sklad') {
-            iconHtml = '❌'; // Černý kruh
-        } else {
-            iconHtml = '📍'; // Výchozí
-        }
+        return greenIcon; // Hotovo = Zelená
+    } 
+    else if (place.storeType === 'HPM') {
+        return redIcon;   // Hypermarket = Červená
+    } 
+    else if (place.storeType === 'zrušeno' || place.storeType === 'sklad') {
+        return greyIcon;  // Zavřeno = Šedá
+    } 
+    else {
+        return blueIcon;  // Vše ostatní (SM) = Modrá
     }
-    
-    return L.divIcon({
-        className: 'custom-icon', 
-        html: `<div style="font-size: 24px;">${iconHtml}</div>`,
-        iconSize: [30, 30]
-    });
 }
 
 // Funkce pro aktualizaci počítadla
