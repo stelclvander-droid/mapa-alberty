@@ -5,25 +5,26 @@
     <title>Interaktivní Mapa Míst</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
     <style>
         /* --- 1. ZÁKLADNÍ NASTAVENÍ --- */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Roboto', sans-serif; /* Moderní font */
+            font-family: 'Roboto', sans-serif;
             color: #333;
             background-color: #f4f7f6;
+            overflow: hidden; /* Žádné posuvníky na celé stránce */
         }
 
-        /* Hlavní kontejner */
         #container {
             display: flex;
-            height: 100vh;
-            overflow: hidden; /* Zabrání dvojitému scrollbaru */
+            height: 100vh; /* Kontejner přes celou výšku */
+            width: 100vw;
+            position: relative;
         }
 
         /* --- 2. BOČNÍ PANEL (SIDEBAR) --- */
@@ -33,28 +34,72 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1); /* Stín vržený na mapu */
-            z-index: 1000; /* Aby byl stín nad mapou */
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 2000; /* Musí být nad mapou */
+            
+            /* Animace pro vysouvání */
+            transition: transform 0.3s ease-in-out;
+            position: relative; 
+            height: 100%;
+            box-sizing: border-box; 
+            flex-shrink: 0; /* Panel se nesmí smrsknout */
         }
 
-        /* Mapa */
-        #mapid {
-            flex: 1;
+        /* Třída pro skrytý panel */
+        #sidebar.collapsed {
+            transform: translateX(-100%); /* Posune panel doleva mimo obrazovku */
+            position: absolute; /* Vyjme ho z toku */
             height: 100%;
         }
 
-        /* Nadpis */
+        /* --- 3. MAPA --- */
+        #mapid {
+            flex: 1; /* Zabere zbývající místo */
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- 4. TLAČÍTKO PRO SBALENÍ PANELU --- */
+        #toggleSidebar {
+            position: absolute;
+            
+            /* ZMĚNA ZDE: Posuneme ho dolů pod ovládání zoomu (+ a -) */
+            top: 80px; 
+            left: 10px; 
+            
+            z-index: 1500; 
+            width: 34px; /* Trochu ho zmenšíme, aby ladilo s tlačítky mapy */
+            height: 34px;
+            border-radius: 4px; /* Stejné zaoblení jako Leaflet tlačítka */
+            background-color: white;
+            color: #333;
+            font-size: 20px;
+            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Upravený stín */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #toggleSidebar:hover {
+            background-color: #f4f4f4;
+        }
+        
+        /* --- 5. STYLY PRO PRVKY V PANELU --- */
         h2 {
             margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 22px;
+            margin-bottom: 15px;
+            font-size: 20px;
             color: #2c3e50;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         #progress-counter {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             background: #e9ecef;
             padding: 4px 8px;
@@ -62,196 +107,90 @@
             color: #495057;
         }
 
-        /* --- 3. TLAČÍTKA (Společný styl) --- */
+        /* Tlačítka */
         button {
             border: none;
-            border-radius: 8px;
-            padding: 10px 15px;
+            border-radius: 6px;
+            padding: 10px;
             font-family: 'Roboto', sans-serif;
             font-weight: 500;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s ease; /* Plynulá animace při najetí */
             margin-bottom: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        button:active {
-            transform: translateY(1px); /* Efekt stisknutí */
-            box-shadow: none;
-        }
-
-        /* Konkrétní tlačítka */
         #findMeButton {
-            background-color: #007bff; /* Jasná modrá */
-            color: white;
-            width: 100%;
+            background-color: #007bff; color: white; width: 100%;
         }
         #findMeButton:hover { background-color: #0056b3; }
-
+        
         #resetButton {
-            background-color: #fff;
-            border: 1px solid #dc3545;
-            color: #dc3545;
-            width: 100%;
+            background-color: #fff; border: 1px solid #dc3545; color: #dc3545; width: 100%;
         }
         #resetButton:hover { background-color: #dc3545; color: white; }
 
-        /* Sekce pro export/import */
+        /* Sekce Data */
         #data-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            display: flex; gap: 5px; margin-bottom: 15px;
         }
         .data-btn {
-            flex-grow: 1;
-            background-color: #6c757d;
-            color: white;
-            padding: 8px;
+            flex-grow: 1; background-color: #6c757d; color: white;
         }
         .data-btn:hover { background-color: #5a6268; }
 
-        /* --- 4. FILTRY A OVLÁDÁNÍ --- */
-        
-        /* Boxy pro filtry (šedé pozadí) */
+        /* Boxy filtrů */
         #filter-controls, #filter-controls-type, #distance-controls {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            display: flex; align-items: center; flex-wrap: wrap;
         }
-        
-        /* Odsazení checkboxů */
-        input[type="checkbox"], input[type="radio"] {
-            margin-right: 6px;
-            margin-left: 12px;
-            cursor: pointer;
-            accent-color: #007bff; /* Modré zaškrtávátko */
-        }
-        /* První checkbox bez odsazení zleva */
-        input[type="checkbox"]:first-of-type, input[type="radio"]:first-of-type {
-            margin-left: 5px;
-        }
-        
-        label { cursor: pointer; }
-        span { font-weight: 600; color: #495057; margin-right: 8px; }
+        label { cursor: pointer; margin-right: 10px; margin-left: 5px; }
+        input[type="checkbox"], input[type="radio"] { cursor: pointer; }
+        span { font-weight: bold; margin-right: 5px; color: #555; }
 
         /* Třídění */
         #sort-controls {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-            align-items: center;
+            display: flex; gap: 5px; margin-bottom: 10px;
         }
         #sort-controls button {
-            margin-bottom: 0;
-            background: white;
-            border: 1px solid #ced4da;
-            padding: 6px 10px;
-            font-size: 13px;
-            flex-grow: 1;
+            flex-grow: 1; background: white; border: 1px solid #ced4da; font-size: 12px; padding: 5px; margin: 0;
         }
         #sort-controls button:hover { background: #e9ecef; }
 
-        /* Vyhledávání */
+        /* Hledání */
         #searchInput {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-            margin-bottom: 15px;
-            outline: none;
-        }
-        #searchInput:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 3px rgba(0,123,255,.25);
+            width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box;
         }
 
-        /* --- 5. SEZNAM POLOŽEK --- */
+        /* Seznam */
         #sidebar-content {
             flex-grow: 1;
             overflow-y: auto;
             border-top: 1px solid #e9ecef;
         }
-
-        /* Jedna položka */
         .sidebar-item {
-            padding: 10px;
-            border-bottom: 1px solid #f1f1f1;
-            display: flex;
-            align-items: center;
-            transition: background 0.2s;
+            padding: 8px 5px; border-bottom: 1px solid #f1f1f1; display: flex; align-items: center;
         }
-        .sidebar-item:hover {
-            background-color: #f8f9fa; /* Jemné podbarvení při najetí */
-        }
-        
-        /* Text položky */
+        .sidebar-item:hover { background-color: #f8f9fa; }
         .sidebar-item label {
-            margin-left: 12px;
-            font-size: 14px;
-            flex-grow: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Tlačítka v položce (Pravítko) */
-        .measure-btn {
-            background: white;
-            border: 1px solid #dee2e6;
-            color: #adb5bd; /* Šedá ikona když je neaktivní */
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            border-radius: 50%; /* Kulaté tlačítko */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: auto; /* Zarovnání doprava */
-            margin-bottom: 0;
-            flex-shrink: 0;
-        }
-        .measure-btn:hover {
-            background: #e9ecef;
-            color: #495057;
-        }
-        .measure-btn.active {
-            background-color: #ffc107;
-            border-color: #ffc107;
-            color: #212529;
+            flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin-left: 8px;
         }
         
-        /* Výsledek vzdálenosti */
-        .distance-result {
-            font-size: 13px;
-            font-weight: bold;
-            color: #007bff;
-            margin-right: 10px;
-            margin-left: 10px;
+        /* Pravítko v seznamu */
+        .measure-btn {
+            width: 28px; height: 28px; border-radius: 50%; padding: 0; margin: 0; margin-left: auto;
+            display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #dee2e6;
             flex-shrink: 0;
         }
-
-        /* --- 6. VYLEPŠENÝ POSUVNÍK (Scrollbar) --- */
-        /* Pro Chrome, Edge, Safari */
-        #sidebar-content::-webkit-scrollbar, #sidebar::-webkit-scrollbar {
-            width: 8px;
-        }
-        #sidebar-content::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        #sidebar-content::-webkit-scrollbar-thumb {
-            background: #ccc; 
-            border-radius: 4px;
-        }
-        #sidebar-content::-webkit-scrollbar-thumb:hover {
-            background: #aaa; 
+        .measure-btn:hover { background: #e9ecef; }
+        .measure-btn.active { background: #ffc107; border-color: #e0a800; }
+        
+        .distance-result {
+            font-size: 12px; color: #007bff; font-weight: bold; margin-left: 5px; margin-right: 5px; flex-shrink: 0;
         }
     </style>
 </head>
@@ -261,48 +200,37 @@
         
         <div id="sidebar">
             
-            <h2>Seznam míst (Alberty) <span id="progress-counter"></span></h2>
+            <h2>Seznam míst <span id="progress-counter"></span></h2>
 
             <button id="findMeButton">Najdi mě 📌</button>
             <button id="resetButton">Resetovat stav mapy</button>
-            <div id="data-controls" style="margin-bottom: 15px; display: flex; gap: 5px;">
-            <button id="exportBtn" class="data-btn">Uložit 💾</button>
-            <button id="importBtn" class="data-btn">Nahrát 📂</button>
-            <input type="file" id="importInput" style="display: none;" accept=".json">
-            </div>
             
+            <div id="data-controls">
+                <button id="exportBtn" class="data-btn">Uložit 💾</button>
+                <button id="importBtn" class="data-btn">Nahrát 📂</button>
+                <input type="file" id="importInput" style="display: none;" accept=".json">
+            </div>
+
             <div id="filter-controls">
                 <span>Zobrazit: </span>
-                <input type="checkbox" id="filterVisited" checked>
-                <label for="filterVisited">Navštívené</label>
-                
-                <input type="checkbox" id="filterUnvisited" checked>
-                <label for="filterUnvisited">Nenavštívené</label>
+                <input type="checkbox" id="filterVisited" checked> <label for="filterVisited">Navštívené</label>
+                <input type="checkbox" id="filterUnvisited" checked> <label for="filterUnvisited">Nenavštívené</label>
             </div>
             
             <div id="filter-controls-type">
                 <span>Typ: </span>
-                <input type="checkbox" id="filterHPM" checked>
-                <label for="filterHPM">HPM </label>
-                
-                <input type="checkbox" id="filterSM" checked>
-                <label for="filterSM">SM </label>
-                
-                <input type="checkbox" id="filterZruseno" checked>
-                <label for="filterZruseno">Zrušeno </label>
+                <input type="checkbox" id="filterHPM" checked> <label for="filterHPM">HPM 🔴</label>
+                <input type="checkbox" id="filterSM" checked> <label for="filterSM">SM 🔵</label>
+                <input type="checkbox" id="filterZruseno" checked> <label for="filterZruseno">Zrušeno ⚫</label>
             </div>
             
             <div id="distance-controls">
                 <span>Měřit od:</span>
-                <input type="radio" id="startPraha" name="startPoint" value="praha" checked>
-                <label for="startPraha">Praha</label>
-                
-                <input type="radio" id="startBrno" name="startPoint" value="brno">
-                <label for="startBrno">Brno</label>
+                <input type="radio" id="startPraha" name="startPoint" value="praha" checked> <label for="startPraha">Praha</label>
+                <input type="radio" id="startBrno" name="startPoint" value="brno"> <label for="startBrno">Brno</label>
             </div>
 
             <div id="sort-controls">
-                <span>Řadit:</span>
                 <button id="sort-default">Výchozí</button>
                 <button id="sort-name-asc">Název ↓</button>
                 <button id="sort-num-asc">Číslo ↓</button>
@@ -312,7 +240,9 @@
             
             <div id="sidebar-content"></div> 
             
-        </div> <div id="mapid"></div>
+        </div> <div id="mapid">
+            <button id="toggleSidebar">☰</button>
+        </div>
 
     </div> <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="script.js"></script>

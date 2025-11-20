@@ -218,19 +218,46 @@ var defaultPlacesData = [
     { id: 208, lat: 49.5998679, lng: 18.012615, name: "Nový Jičín", storeNumber: "395", storeType: "HPM", visited: false }
 ];
 
-// TOTO VLOŽTE HNED POD VÁŠ SEZNAM defaultPlacesData
-// UJISTĚTE SE, ŽE JSTE VŠECHEN OSTATNÍ KÓD SMAZAL
+// --- ZDE ZAČÍNÁ KÓD POD VAŠÍM SEZNAMEM DAT ---
 
 var placesData = [];
 var userLocationMarker = null; // Pro GPS značku
 
-// OBJEKT SE SOUŘADNICEMI PRO MĚSTA
+// OBJEKT SE SOUŘADNICEMI PRO MĚSTA (Start měření)
 const cityCoordinates = {
     praha: { lat: 50.0755, lng: 14.4378 },
     brno: { lat: 49.1951, lng: 16.6068 }
 };
 
-// Kontrola, jestli existují uložená data, a jejich načtení
+// --- DEFINICE IKON (Špendlíky) ---
+var commonIconSettings = {
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    shadowSize: [41, 41],
+    shadowAnchor: [12, 41]
+};
+
+var redIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    ...commonIconSettings
+});
+var blueIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+    ...commonIconSettings
+});
+var greenIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    ...commonIconSettings
+});
+var greyIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
+    ...commonIconSettings
+});
+
+
+// NAČTENÍ DAT Z LOCAL STORAGE
 var storedData = localStorage.getItem('mapPlaces');
 if (storedData) {
     placesData = JSON.parse(storedData);
@@ -240,122 +267,71 @@ if (storedData) {
     console.log("Použita výchozí data.");
 }
 
-
-// Funkce pro uložení dat
+// ULOŽENÍ DAT
 function savePlacesData() {
     localStorage.setItem('mapPlaces', JSON.stringify(placesData));
-    console.log("Data uložena do Local Storage.");
 }
 
 
-// --- NOVÁ INICIALIZACE MAPY S VRSTVAMI ---
-
-// 1. Definujeme vrstvy
+// --- INICIALIZACE MAPY (Satelit + Klasika) ---
 var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 });
-
 var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    attribution: 'Tiles &copy; Esri'
 });
 
-// 2. Vytvoříme mapu a nastavíme výchozí vrstvu (OSM)
 var mymap = L.map('mapid', {
     center: [49.75, 15.5],
     zoom: 7,
-    layers: [osmLayer] // Začínáme s klasickou mapou
+    layers: [osmLayer] // Výchozí je klasická
 });
 
-// 3. Vytvoříme přepínač vrstev
 var baseMaps = {
     "Klasická mapa": osmLayer,
     "Satelitní mapa": satelliteLayer
 };
-
-// 4. Přidáme přepínač do pravého horního rohu
 L.control.layers(baseMaps).addTo(mymap);
 
-var markerGroup = L.layerGroup().addTo(mymap);
+var markerGroup = L.layerGroup().addTo(mymap); 
 
 
-// --- KONEC NOVÉ INICIALIZACE ---
-// --- DEFINICE VLASTNÍCH OBRÁZKOVÝCH IKON ---
+// --- FUNKCE ---
 
-// Společné nastavení pro všechny špendlíky (velikost, stín)
-var commonIconSettings = {
-    iconSize: [25, 41], // Velikost obrázku špendlíku (šířka, výška)
-    iconAnchor: [12, 41], // Který bod obrázku ukazuje na mapu (spodní špička)
-    popupAnchor: [1, -34], // Kde se otevře bublina nad špendlíkem
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    shadowSize: [41, 41],
-    shadowAnchor: [12, 41]
-};
-
-// 1. Červený špendlík (pro HPM)
-var redIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    ...commonIconSettings // ... zkopíruje společné nastavení
-});
-
-// 2. Modrý špendlík (pro SM a ostatní)
-var blueIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-    ...commonIconSettings
-});
-
-// 3. Zelený špendlík (NAVŠTÍVENO - Hotovo)
-var greenIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    ...commonIconSettings
-});
-
-// 4. Šedý špendlík (Zrušeno)
-var greyIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-    ...commonIconSettings
-});
-
-// -------------------------------------------
-// NOVÁ FUNKCE: VÝBĚR OBRÁZKOVÉ IKONY
+// Výběr ikony podle typu a stavu
 function createMarkerIcon(place) {
     if (place.visited) {
-        return greenIcon; // Hotovo = Zelená
+        return greenIcon;
     } 
     else if (place.storeType === 'HPM') {
-        return redIcon;   // Hypermarket = Červená
+        return redIcon;
     } 
     else if (place.storeType === 'zrušeno' || place.storeType === 'sklad') {
-        return greyIcon;  // Zavřeno = Šedá
+        return greyIcon;
     } 
     else {
-        return blueIcon;  // Vše ostatní (SM) = Modrá
+        return blueIcon; // SM
     }
 }
 
-// Funkce pro aktualizaci počítadla
+// Počítadlo postupu
 function updateProgressCounter() {
     const visitedCount = placesData.filter(place => place.visited).length;
     const totalCount = placesData.length;
     const counterElement = document.getElementById('progress-counter');
-    
     if (counterElement) {
         counterElement.textContent = `- Navštíveno: ${visitedCount} / ${totalCount}`;
     }
 }
 
-// NAHRAĎTE CELOU FUNKCI renderSidebarList TOUTO VERZÍ (S VÝPOČTEM TRASY AUTEM)
+// Vykreslení bočního panelu (s měřením autem)
 function renderSidebarList() {
-    
     var listContainer = document.getElementById('sidebar-content');
-    if (!listContainer) {
-        console.error("Chyba: Kontejner 'sidebar-content' nebyl nalezen!");
-        return; 
-    }
+    if (!listContainer) return;
 
     listContainer.innerHTML = ''; 
 
     placesData.forEach(function(place) {
-        
         var itemDiv = document.createElement('div');
         itemDiv.className = 'sidebar-item';
         itemDiv.dataset.placeId = place.id; 
@@ -368,14 +344,13 @@ function renderSidebarList() {
 
         var label = document.createElement('label');
         label.htmlFor = 'chk-' + place.id;
-        
         if (place.storeNumber) {
             label.textContent = `(${place.storeNumber}) ${place.name}`;
         } else {
             label.textContent = place.name;
         }
 
-        // PRVKY PRO MĚŘENÍ
+        // Měření vzdálenosti
         var distanceSpan = document.createElement('span');
         distanceSpan.className = 'distance-result'; 
 
@@ -391,11 +366,10 @@ function renderSidebarList() {
         
         listContainer.appendChild(itemDiv);
 
-        // 1. Kliknutí na CHECKBOX
+        // Kliknutí na checkbox
         checkbox.addEventListener('click', function(e) {
             var clickedId = parseInt(e.target.dataset.placeId);
             var clickedPlace = placesData.find(p => p.id === clickedId);
-            
             if (clickedPlace) {
                 clickedPlace.visited = e.target.checked;
                 savePlacesData();
@@ -404,105 +378,106 @@ function renderSidebarList() {
             }
         });
 
-        // 2. Kliknutí na ŘÁDEK
+        // Kliknutí na řádek (Zoom)
         itemDiv.addEventListener('click', function(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') { 
-                return; 
-            }
+            if (['INPUT', 'BUTTON'].includes(e.target.tagName)) return;
             var clickedId = parseInt(this.dataset.placeId); 
             var clickedPlace = placesData.find(p => p.id === clickedId);
-
             if (clickedPlace) {
                 mymap.flyTo([clickedPlace.lat, clickedPlace.lng], 16);
             }
         });
         
-        // 3. Kliknutí na TLAČÍTKO MĚŘENÍ (VÝPOČET TRASY PŘES OSRM API)
+        // Kliknutí na měření (OSRM)
         measureButton.addEventListener('click', function(e) {
             e.stopPropagation(); 
-
             var button = this;
             
-            // Pokud už je aktivní, jen to vypneme
             if (button.classList.contains('active')) {
                 button.classList.remove('active');
                 distanceSpan.textContent = ''; 
                 return;
             } 
 
-            // --- ZAPÍNÁME MĚŘENÍ ---
             button.classList.add('active'); 
-            distanceSpan.textContent = ' (počítám...)'; // Informace pro uživatele
+            distanceSpan.textContent = '...';
 
-            // 1. Zjistíme start a cíl
             let startPointKey = document.querySelector('input[name="startPoint"]:checked').value;
             let startCoords = cityCoordinates[startPointKey];
-            
-            // OSRM API vyžaduje pořadí: "Zeměpisná délka, Zeměpisná šířka" (Lng, Lat) !!!
-            // To je opačně než Leaflet (Lat, Lng).
             let startString = `${startCoords.lng},${startCoords.lat}`;
             let endString = `${place.lng},${place.lat}`;
-
-            // 2. Sestavíme URL pro API dotaz
+            
+            // OSRM API (trasa autem)
             let url = `https://router.project-osrm.org/route/v1/driving/${startString};${endString}?overview=false`;
 
-            // 3. Pošleme dotaz na internet
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-                        // Vzdálenost je v metrech
-                        let distanceMeters = data.routes[0].distance;
-                        let distanceKm = (distanceMeters / 1000).toFixed(1);
-                        
-                        // Čas je v sekundách
-                        let durationSeconds = data.routes[0].duration;
-                        let durationMinutes = Math.round(durationSeconds / 60);
+                    if (data.code === 'Ok' && data.routes.length > 0) {
+                        let distanceKm = (data.routes[0].distance / 1000).toFixed(1);
+                        let durationMinutes = Math.round(data.routes[0].duration / 60);
                         let hours = Math.floor(durationMinutes / 60);
                         let minutes = durationMinutes % 60;
-                        
-                        let timeString = '';
-                        if (hours > 0) { timeString = `${hours}h ${minutes}m`; }
-                        else { timeString = `${minutes} min`; }
-
+                        let timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
                         distanceSpan.textContent = ` (${distanceKm} km, ${timeString})`;
                     } else {
-                        distanceSpan.textContent = ' (chyba trasy)';
+                        distanceSpan.textContent = ' (chyba)';
                     }
                 })
-                .catch(error => {
-                    console.error('Chyba při výpočtu trasy:', error);
-                    distanceSpan.textContent = ' (chyba spojení)';
-                });
+                .catch(err => { console.error(err); distanceSpan.textContent = ' (chyba)'; });
         });
     }); 
 }
 
+// Export dat
+function exportData() {
+    const dataStr = JSON.stringify(placesData);
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "moje_mapa_zaloha.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
 
-// Funkce pro reset mapy
+// Import dat
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            if (Array.isArray(importedData)) {
+                placesData = importedData;
+                savePlacesData();
+                renderSidebarList();
+                updateProgressCounter();
+                filterList(); 
+                alert("Data nahrána!");
+            }
+        } catch (err) { alert("Chyba souboru."); }
+        event.target.value = ''; 
+    };
+    reader.readAsText(file);
+}
+
+// Reset mapy
 function resetMap() {
-    var opravduResetovat = confirm("Opravdu chcete resetovat celou mapu?\nVeškerý postup (navštívená místa) bude ztracen.");
-
-    if (opravduResetovat) {
+    if (confirm("Opravdu resetovat celou mapu?")) {
         placesData = defaultPlacesData;
-        placesData.forEach(function(place) {
-            place.visited = false;
-        });
+        placesData.forEach(p => p.visited = false);
         savePlacesData();
-
         renderSidebarList();
         filterList(); 
         updateProgressCounter();
-        
-        console.log("Mapa byla KOMPLETNĚ RESETOVÁNA.");
-    } else {
-        console.log("Reset mapy byl zrušen.");
     }
 }
 
-// Funkce pro filtrování seznamu A mapy
+// Filtrování
 function filterList() {
-    
     let query = document.getElementById('searchInput').value.toLowerCase();
     let showVisited = document.getElementById('filterVisited').checked;
     let showUnvisited = document.getElementById('filterUnvisited').checked;
@@ -510,43 +485,32 @@ function filterList() {
     let showSM = document.getElementById('filterSM').checked;
     let showZruseno = document.getElementById('filterZruseno').checked;
     
-    // Filtrování SEZNAMU
     let listContainer = document.getElementById('sidebar-content');
     if (listContainer) {
         let items = listContainer.getElementsByClassName('sidebar-item');
-        
         Array.from(items).forEach(function(item) {
             let itemId = parseInt(item.dataset.placeId);
             let place = placesData.find(p => p.id === itemId);
-            
             if (place) {
                 const itemText = (place.name + " " + (place.storeNumber || "")).toLowerCase();
                 const textMatch = itemText.includes(query);
                 const statusMatch = (place.visited && showVisited) || (!place.visited && showUnvisited);
-                
-                 let typeMatch = 
+                let typeMatch = 
                     (place.storeType === 'HPM' && showHPM) ||
                     (place.storeType === 'SM' && showSM) ||
                     ((place.storeType === 'zrušeno' || place.storeType === 'sklad') && showZruseno);
                 
-                if (textMatch && statusMatch && typeMatch) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = (textMatch && statusMatch && typeMatch) ? 'flex' : 'none';
             }
         });
     }
-
-    // Překreslíme MAPU
     renderMarkers();
 }
 
-// Funkce pro vykreslení bodů na mapě
-// NAHRAĎTE CELOU PŮVODNÍ FUNKCI renderMarkers TOUTO VERZÍ
+// Vykreslení markerů
 function renderMarkers() {
     
-    // 1. Získáme filtry
+    // 1. Načteme filtry
     let query = document.getElementById('searchInput').value.toLowerCase();
     let showVisited = document.getElementById('filterVisited').checked;
     let showUnvisited = document.getElementById('filterUnvisited').checked;
@@ -562,272 +526,165 @@ function renderMarkers() {
         const itemText = (place.name + " " + (place.storeNumber || "")).toLowerCase();
         const textMatch = itemText.includes(query);
         const statusMatch = (place.visited && showVisited) || (!place.visited && showUnvisited);
-        
-         let typeMatch = 
+        let typeMatch = 
             (place.storeType === 'HPM' && showHPM) ||
             (place.storeType === 'SM' && showSM) ||
             ((place.storeType === 'zrušeno' || place.storeType === 'sklad') && showZruseno);
 
-        if (!(textMatch && statusMatch && typeMatch)) {
-            return; 
-        }
+        if (!(textMatch && statusMatch && typeMatch)) return; 
 
         // Vytvoření markeru
-        var initialIcon = createMarkerIcon(place);
         var marker = L.marker([place.lat, place.lng], {
-            icon: initialIcon,
+            icon: createMarkerIcon(place),
             placeId: place.id 
         });
 
-        // --- TVORBA POP-UPU A NAVIGACE ---
-        
+        // --- Příprava obsahu ---
         let nameString = place.name;
-        if (place.storeNumber) {
-            nameString = `(${place.storeNumber}) ${place.name}`;
-        }
+        if (place.storeNumber) nameString = `(${place.storeNumber}) ${place.name}`;
+        
+        // SPRÁVNÝ ODKAZ PRO NAVIGACI
+        // Tento formát otevře přímo "Trasu" s vyplněným cílem
+        let navLink = 'https://www.google.com/maps/dir/?api=1&destination=' + place.lat + ',' + place.lng;
         
         let popupContent = `<b>${nameString}</b>`;
         popupContent += `<br>Stav: ${place.visited ? 'Navštíveno ✅' : 'Nenavštíveno 📍'}`;
-        
-        // TOTO JE TEN OPRAVENÝ ODKAZ
-        // Používáme standardní formát "https://www.google.com/maps?q=LAT,LNG"
-        let navLink = 'https://www.google.com/maps?q=' + place.lat + ',' + place.lng;
-        
-        popupContent += '<br><a href="' + navLink + '" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: none; margin-top: 5px; display: inline-block;">Navigovat 🚗</a>';
+        popupContent += '<br><a href="' + navLink + '" target="_blank" style="display:inline-block; margin-top:5px; color:#fff; background-color:#007bff; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:12px;">Navigovat 🚗</a>';
         
         marker.bindPopup(popupContent);
         marker.bindTooltip(nameString); 
-        
         markerGroup.addLayer(marker); 
 
-        // Kliknutí na MARKER
+        // Kliknutí na marker
         marker.on('click', function(e) {
-            
             var clickedPlace = placesData.find(p => p.id === this.options.placeId);
             if (!clickedPlace) return;
+            
+            // Změna stavu
             clickedPlace.visited = !clickedPlace.visited;
             savePlacesData();
-
+            
+            // Aktualizace okolí
             renderSidebarList();
             updateProgressCounter();
 
-            // Změna ikony
-            var newIcon = createMarkerIcon(clickedPlace);
-            this.setIcon(newIcon);
-
-            // Kontrola filtrů po kliknutí
-            let showVisited = document.getElementById('filterVisited').checked;
-            let showUnvisited = document.getElementById('filterUnvisited').checked;
-            // ... (zbytek proměnných filtrů už máme nahoře, ale pro jistotu je čteme znovu nebo použijeme logiku)
-            // Pro jednoduchost zde jen překreslíme ikonu a otevřeme pop-up. 
-            // Pokud by měl zmizet, stane se to až při příštím filtru, 
-            // nebo můžeme nechat logiku z minula, pokud ji tam chcete.
+            // Ruční update ikony
+            this.setIcon(createMarkerIcon(clickedPlace));
             
-            // Pro navigaci uvnitř kliknutí musíme odkaz sestavit znovu:
-            let navLinkClick = 'https://www.google.com/maps?q=' + clickedPlace.lat + ',' + clickedPlace.lng;
+            // Kontrola filtrů (jestli má zmizet)
+            let fVisited = document.getElementById('filterVisited').checked;
+            let fUnvisited = document.getElementById('filterUnvisited').checked;
+            const newStatusMatch = (clickedPlace.visited && fVisited) || (!clickedPlace.visited && fUnvisited);
             
-            let nameStringClick = clickedPlace.name;
-            if (clickedPlace.storeNumber) nameStringClick = `(${clickedPlace.storeNumber}) ${clickedPlace.name}`;
-
-            let popupContentClick = `<b>${nameStringClick}</b>`;
-            popupContentClick += `<br>Stav: ${clickedPlace.visited ? 'Navštíveno ✅' : 'Nenavštíveno 📍'}`;
-            popupContentClick += '<br><a href="' + navLinkClick + '" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: none; margin-top: 5px; display: inline-block;">Navigovat 🚗</a>';
-            
-            this.bindPopup(popupContentClick).openPopup();
+            if (!newStatusMatch) {
+                markerGroup.removeLayer(this);
+            } else {
+                // Znovu sestavíme a otevřeme pop-up (aby se aktualizoval stav "Navštíveno")
+                let newName = clickedPlace.name;
+                if (clickedPlace.storeNumber) newName = `(${clickedPlace.storeNumber}) ${clickedPlace.name}`;
+                
+                let newNavLink = 'https://www.google.com/maps/dir/?api=1&destination=' + clickedPlace.lat + ',' + clickedPlace.lng;
+                
+                let newContent = `<b>${newName}</b><br>Stav: ${clickedPlace.visited ? 'Navštíveno ✅' : 'Nenavštíveno 📍'}`;
+                newContent += '<br><a href="' + newNavLink + '" target="_blank" style="display:inline-block; margin-top:5px; color:#fff; background-color:#007bff; padding:5px 10px; border-radius:4px; text-decoration:none; font-size:12px;">Navigovat 🚗</a>';
+                
+                this.bindPopup(newContent).openPopup();
+            }
         });
     });
 }
 
-// Funkce pro Geolokaci
+// GPS Geolokace
 function findMe() {
-    if (!navigator.geolocation) {
-        alert("Váš prohlížeč nepodporuje geolokaci.");
-        return;
-    }
-    console.log("Vyžaduji polohu...");
-
-    function success(position) {
+    if (!navigator.geolocation) { alert("GPS není podporováno."); return; }
+    console.log("Hledám polohu...");
+    navigator.geolocation.getCurrentPosition(function(position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
-        console.log(`Poloha nalezena: ${lat}, ${lng}`);
-
-        if (userLocationMarker) {
-            mymap.removeLayer(userLocationMarker);
-        }
-
-        var blueIcon = L.divIcon({
-            className: 'custom-icon',
-            html: `<div style="font-size: 24px;">📍</div>`, // Špendlík
-            iconSize: [30, 30]
+        if (userLocationMarker) mymap.removeLayer(userLocationMarker);
+        
+        // Modrý špendlík pro polohu uživatele
+        var userIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+            ...commonIconSettings
         });
 
-        userLocationMarker = L.marker([lat, lng], { icon: blueIcon }).addTo(mymap);
+        userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(mymap);
         userLocationMarker.bindPopup("<b>Tady jsi!</b>").openPopup();
-        mymap.flyTo([lat, lng], 16);
-    }
-
-    function error() {
-        alert("Nelze získat vaši polohu. Ujistěte se, že jste povolili přístup.");
-        console.error("Chyba geolokace.");
-    }
-    navigator.geolocation.getCurrentPosition(success, error);
+        mymap.flyTo([lat, lng], 15);
+    }, function() { alert("Chyba GPS."); });
 }
 
-// Funkce pro Třídění
+// Třídění
 function sortAndRender(sortType) {
-    
     if (sortType === 'default') {
         placesData.sort((a, b) => a.id - b.id);
-    } 
-    else if (sortType === 'name-asc') {
+    } else if (sortType === 'name-asc') {
         placesData.sort((a, b) => a.name.localeCompare(b.name));
-    } 
-    else if (sortType === 'num-asc') {
+    } else if (sortType === 'num-asc') {
         placesData.sort((a, b) => {
             const numA = a.storeNumber || '99999';
             const numB = b.storeNumber || '99999';
             return numA.localeCompare(numB, undefined, { numeric: true });
         });
     }
-    
     renderSidebarList();
     filterList();
 }
-// NOVÁ FUNKCE: Export dat (stažení souboru)
-function exportData() {
-    // 1. Převedeme data na text
-    const dataStr = JSON.stringify(placesData);
-    
-    // 2. Vytvoříme virtuální soubor
-    const blob = new Blob([dataStr], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
-    
-    // 3. Vytvoříme odkaz a klikneme na něj
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "moje_mapa_albert_zaloha.json"; // Název souboru
-    document.body.appendChild(a);
-    a.click();
-    
-    // 4. Úklid
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
 
-// NOVÁ FUNKCE: Import dat (nahrání souboru)
-function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        try {
-            // 1. Přečteme data ze souboru
-            const importedData = JSON.parse(e.target.result);
-            
-            // 2. Jednoduchá kontrola, jestli je to pole
-            if (Array.isArray(importedData)) {
-                // 3. Přepíšeme naše data
-                placesData = importedData;
-                savePlacesData(); // Uložíme do prohlížeče
-                
-                // 4. Vše překreslíme
-                renderSidebarList();
-                updateProgressCounter();
-                filterList(); 
-                
-                alert("Záloha byla úspěšně nahrána! ✅");
-            } else {
-                alert("Chyba: Soubor nemá správný formát.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Chyba při čtení souboru. Je to platný JSON?");
-        }
-        
-        // Vyčistíme input, aby šel stejný soubor nahrát znovu
-        event.target.value = ''; 
-    };
-    
-    reader.readAsText(file);
-}
-
-
-// -----------------------------------------------------------------
-// SPUŠTĚNÍ A PŘIPOJENÍ VŠECH OVLÁDACÍCH PRVKŮ
-// -----------------------------------------------------------------
+// --- SPUŠTĚNÍ ---
 document.addEventListener('DOMContentLoaded', function() {
+    // Připojení tlačítek
+    document.getElementById('findMeButton')?.addEventListener('click', findMe);
+    document.getElementById('resetButton')?.addEventListener('click', resetMap);
+    document.getElementById('exportBtn')?.addEventListener('click', exportData);
     
-    // A. Připojení tlačítka "Najdi mě"
-    var findMeBtn = document.getElementById('findMeButton');
-    if (findMeBtn) { findMeBtn.addEventListener('click', findMe); }
-
-    // B. Připojení tlačítka Reset
-    var tlacitko = document.getElementById('resetButton');
-    if (tlacitko) { tlacitko.addEventListener('click', resetMap); }
-
-    // C. Připojení vyhledávacího pole
-    var searchInput = document.getElementById('searchInput');
-    if (searchInput) { searchInput.addEventListener('keyup', filterList); }
-    
-    // D. Připojení filtrů STAVU
-    var filterVisited = document.getElementById('filterVisited');
-    if (filterVisited) { filterVisited.addEventListener('click', filterList); }
-    
-    var filterUnvisited = document.getElementById('filterUnvisited');
-    if (filterUnvisited) { filterUnvisited.addEventListener('click', filterList); }
-    
-    // E. Připojení filtrů TYPU
-    var filterHPM = document.getElementById('filterHPM');
-    if (filterHPM) { filterHPM.addEventListener('click', filterList); }
-    
-    var filterSM = document.getElementById('filterSM');
-    if (filterSM) { filterSM.addEventListener('click', filterList); }
-    
-    var filterZruseno = document.getElementById('filterZruseno');
-    if (filterZruseno) { filterZruseno.addEventListener('click', filterList); }
-
-    // F. Připojení tlačítek TŘÍDĚNÍ
-    var sortDefault = document.getElementById('sort-default');
-    if (sortDefault) { sortDefault.addEventListener('click', () => sortAndRender('default')); }
-    
-    var sortNameAsc = document.getElementById('sort-name-asc');
-    if (sortNameAsc) { sortNameAsc.addEventListener('click', () => sortAndRender('name-asc')); }
-    
-    var sortNumAsc = document.getElementById('sort-num-asc');
-    if (sortNumAsc) { sortNumAsc.addEventListener('click', () => sortAndRender('num-asc')); }
-
-
-    // G. Prvotní vykreslení až po připojení
-    renderSidebarList();
-    filterList(); // filterList() zavolá renderMarkers()
-    updateProgressCounter();
-
-    // ... (kód pro tlačítko Reset) ...
-
-    // --- NOVÉ: PŘIPOJENÍ IMPORTU A EXPORTU ---
-    
-    // Export
-    var exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) { 
-        exportBtn.addEventListener('click', exportData); 
-    }
-
-    // Import (kliknutí na tlačítko otevře skrytý input)
+    // Import
     var importBtn = document.getElementById('importBtn');
     var importInput = document.getElementById('importInput');
-    
     if (importBtn && importInput) {
-        // Kliknutí na hezké tlačítko -> klikne na skryté pole pro soubor
-        importBtn.addEventListener('click', function() {
-            importInput.click();
-        });
-        // Když uživatel vybere soubor -> spustí se funkce importData
+        importBtn.addEventListener('click', function() { importInput.click(); });
         importInput.addEventListener('change', importData);
     }
-    
-    // --- KONEC NOVÉ ČÁSTI ---
 
-    // ... (kód pro searchInput a zbytek) ...
+    // Vyhledávání
+    document.getElementById('searchInput')?.addEventListener('keyup', filterList);
+
+    // Filtry
+    ['filterVisited', 'filterUnvisited', 'filterHPM', 'filterSM', 'filterZruseno'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', filterList);
+    });
+
+    // Třídění
+    document.getElementById('sort-default')?.addEventListener('click', () => sortAndRender('default'));
+    document.getElementById('sort-name-asc')?.addEventListener('click', () => sortAndRender('name-asc'));
+    document.getElementById('sort-num-asc')?.addEventListener('click', () => sortAndRender('num-asc'));
+    
+    // SBALOVÁNÍ BOČNÍHO PANELU (NOVÉ)
+    var toggleBtn = document.getElementById('toggleSidebar');
+    var sidebar = document.getElementById('sidebar');
+    
+    if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            
+            // Změna ikony tlačítka (☰ vs ✖)
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.textContent = '☰'; // Menu (když je zavřeno)
+                toggleBtn.style.left = '10px'; // Tlačítko zůstane vlevo
+            } else {
+                toggleBtn.textContent = '✖'; // Křížek (když je otevřeno)
+                // Na mobilech posuneme tlačítko, aby bylo vidět vedle panelu (volitelné)
+            }
+            
+            // Důležité: Říct mapě, že se změnila velikost okna
+            setTimeout(function() {
+                mymap.invalidateSize();
+            }, 300);
+        });
+    }
+    // První vykreslení
+    renderSidebarList();
+    filterList(); 
+    updateProgressCounter();
 });
