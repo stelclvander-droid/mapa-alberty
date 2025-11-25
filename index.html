@@ -8,153 +8,253 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+    <link rel="manifest" href="manifest.json">
+
+    <meta name="theme-color" content="#2196F3">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png">
     <style>
-        /* --- 1. GLOBÁLNÍ STYLY --- */
+        /* --- 1. CHYTRÉ PROMĚNNÉ (BARVY) --- */
         :root {
-            --bg-app: #f4f7f6; --bg-panel: #ffffff; --text-main: #333;
-            --border: #e0e0e0; --input-bg: #fff; --hover-bg: #f8f9fa; --shadow: rgba(0,0,0,0.1);
-        }
-        body.dark-mode {
-            --bg-app: #121212; --bg-panel: #1e1e1e; --text-main: #e0e0e0;
-            --border: #333; --input-bg: #2c2c2c; --hover-bg: #333; --shadow: rgba(0,0,0,0.5);
+            /* SVĚTLÝ REŽIM (Výchozí) */
+            --bg-app: #f4f7f6;
+            --bg-panel: #ffffff;
+            --text-main: #333333;
+            --text-secondary: #555555;
+            --border: #e0e0e0;
+            --input-bg: #ffffff;
+            --hover-bg: #f8f9fa;
+            --shadow: rgba(0,0,0,0.1);
+            --accent: #2196F3;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', sans-serif; color: var(--text-main); background: var(--bg-app); overflow: hidden; }
+        /* TMAVÝ REŽIM (Aktivuje se třídou .dark-mode) */
+        body.dark-mode {
+            --bg-app: #121212;
+            --bg-panel: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --border: #333333;
+            --input-bg: #2c2c2c;
+            --hover-bg: #333333;
+            --shadow: rgba(0,0,0,0.5);
+            --accent: #64b5f6; /* Světlejší modrá pro tmavé pozadí */
+        }
+
+        /* Aplikace barev */
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-app);
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
         #container { display: flex; height: 100vh; width: 100vw; position: relative; }
 
-        /* --- 2. BOČNÍ PANEL --- */
+        /* --- SIDEBAR --- */
         #sidebar {
-            width: 360px; background: var(--bg-panel); display: flex; flex-direction: column;
-            box-shadow: 4px 0 15px var(--shadow); z-index: 2000;
-            transition: margin-left 0.3s ease-in-out; position: relative; height: 100%; flex-shrink: 0;
+            width: 360px;
+            background-color: var(--bg-panel);
+            padding: 20px;
+            display: flex; flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            z-index: 2000;
+            transition: transform 0.3s ease-in-out, background-color 0.3s;
+            position: relative; height: 100%;
+            box-sizing: border-box; flex-shrink: 0;
         }
-        #sidebar.collapsed { margin-left: -360px; }
+        #sidebar.collapsed { transform: translateX(-100%); position: absolute; }
 
-        .sidebar-header { 
-            padding: 15px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); 
-            display: flex; justify-content: space-between; align-items: center;
+        /* Hlavička s tlačítkem pro Dark Mode */
+        .header-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
         }
+        h2 { margin: 0; font-size: 20px; color: var(--text-main); }
         
-        .header-buttons { display: flex; gap: 5px; }
-        .icon-btn {
+        #themeToggle {
             background: transparent; border: 1px solid var(--border); color: var(--text-main);
-            width: 34px; height: 34px; border-radius: 50%; cursor: pointer; 
+            width: 36px; height: 36px; border-radius: 50%; padding: 0; margin: 0;
             display: flex; align-items: center; justify-content: center; font-size: 18px;
-            margin: 0; transition: background 0.2s;
         }
-        .icon-btn:hover { background: var(--hover-bg); }
-        #closeSidebar:hover { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
+        #themeToggle:hover { background-color: var(--hover-bg); }
 
-        .sidebar-controls { padding: 15px 20px; flex-shrink: 0; }
-        #sidebar-content { flex-grow: 1; overflow-y: auto; padding: 10px 15px; background: var(--hover-bg); }
-
-        h2 { margin: 0; font-size: 20px; display: flex; align-items: center; }
-        #progress-counter { font-size: 12px; background: var(--hover-bg); padding: 4px 10px; border-radius: 20px; margin-left: 10px; }
-
-        /* --- 3. TLAČÍTKO NA MAPĚ --- */
-        #openSidebar {
-            position: absolute; top: 80px; left: 10px; z-index: 1500;
-            width: 34px; height: 34px; border-radius: 4px;
-            background: var(--bg-panel); color: var(--text-main); border: 2px solid rgba(0,0,0,0.2);
-            font-size: 20px; display: none; /* Výchozí skryté */
-            align-items: center; justify-content: center; cursor: pointer;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        #progress-counter {
+            font-size: 12px; font-weight: 700; background: var(--hover-bg);
+            color: var(--text-secondary); padding: 4px 10px; border-radius: 20px; margin-left: 5px;
         }
-        #openSidebar:hover { background: var(--hover-bg); }
 
-        /* --- 4. OSTATNÍ PRVKY --- */
-        button { border: none; border-radius: 8px; padding: 10px; font-weight: 500; cursor: pointer; margin-bottom: 8px; }
-        #findMeButton { background: #007bff; color: white; width: 100%; }
-        #findNearestButton { background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; width: 100%; }
-        #resetButton { background: var(--bg-panel); border: 1px solid #dc3545; color: #dc3545; width: 100%; }
-        
-        .data-controls { display: flex; gap: 5px; margin-bottom: 10px; }
-        .data-btn { flex: 1; background: #6c757d; color: white; padding: 8px; }
+        /* Tlačítka */
+        button {
+            border: none; border-radius: 8px; padding: 10px;
+            font-family: inherit; font-weight: 500; font-size: 14px;
+            cursor: pointer; margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        button:active { transform: scale(0.98); }
 
-        .control-box { background: var(--hover-bg); border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; display: flex; align-items: center; flex-wrap: wrap; }
-        label { margin-right: 10px; margin-left: 5px; cursor: pointer; }
-        
-        .sidebar-item { background: var(--bg-panel); margin-bottom: 8px; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px var(--shadow); display: flex; align-items: center; }
-        .sidebar-item label { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 10px; }
-        
-        .measure-btn { width: 30px; height: 30px; border-radius: 50%; margin-left: auto; display: flex; align-items: center; justify-content: center; background: var(--bg-panel); border: 1px solid var(--border); }
-        .measure-btn.active { background: #FFC107; color: black; }
-        .distance-result { font-size: 12px; color: #007bff; font-weight: bold; margin: 0 8px; }
+        #findMeButton { background-color: #007bff; color: white; width: 100%; }
+        #resetButton { background-color: var(--bg-panel); border: 1px solid #dc3545; color: #dc3545; width: 100%; }
+        #resetButton:hover { background-color: #ffebee; }
 
+        #data-controls { display: flex; gap: 5px; margin-bottom: 15px; }
+        .data-btn { flex-grow: 1; background-color: #6c757d; color: white; }
+        
+        /* Filtry a boxy */
+        .control-box {
+            background-color: var(--hover-bg);
+            border: 1px solid var(--border);
+            padding: 10px; border-radius: 6px; margin-bottom: 10px;
+            font-size: 13px; display: flex; align-items: center; flex-wrap: wrap; color: var(--text-secondary);
+        }
+        label { cursor: pointer; margin-right: 10px; margin-left: 5px; color: var(--text-main); }
+        span { font-weight: bold; margin-right: 5px; }
+
+        /* Třídění */
+        #sort-controls { display: flex; gap: 5px; margin-bottom: 10px; }
+        #sort-controls button {
+            flex-grow: 1; background: var(--bg-panel); border: 1px solid var(--border);
+            color: var(--text-main); margin: 0; font-size: 12px; padding: 6px;
+        }
+        #sort-controls button:hover { background: var(--hover-bg); }
+
+        /* Hledání */
+        #searchInput {
+            width: 100%; padding: 10px;
+            border: 1px solid var(--border);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border-radius: 6px; margin-bottom: 10px; box-sizing: border-box;
+        }
+
+        /* Seznam */
+        #sidebar-content { flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border); }
+        
+        .sidebar-item {
+            padding: 10px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; background: var(--bg-panel);
+        }
+        .sidebar-item:hover { background-color: var(--hover-bg); }
+        .sidebar-item label {
+            flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 8px;
+        }
+
+        /* Ikonky v seznamu */
+        .measure-btn {
+            width: 30px; height: 30px; border-radius: 50%; padding: 0; margin-left: auto;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .measure-btn:hover { background: var(--hover-bg); }
+        .measure-btn.active { background: #FFC107; color: #000; border-color: #FFC107; }
+        
+        .distance-result {
+            font-size: 12px; color: var(--accent); font-weight: 700; margin: 0 8px; flex-shrink: 0;
+        }
+
+        /* Mapa */
         #mapid { flex: 1; height: 100%; position: relative; z-index: 1; }
         
-        /* Animace GPS bodu */
+        #toggleSidebar {
+            position: absolute; top: 150px; left: 10px; z-index: 1500;
+            width: 40px; height: 40px; border-radius: 8px;
+            background-color: var(--bg-panel); color: var(--text-main);
+            border: 2px solid rgba(0,0,0,0.2);
+            font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        
+        @media (max-width: 600px) {
+            #sidebar { width: 100%; position: absolute; }
+        }
+        /* Animace pulzování pro GPS */
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
         }
+
         .gps-pulse {
-            background-color: #007bff; border: 2px solid white; border-radius: 50%;
-            animation: pulse 2s infinite; width: 20px !important; height: 20px !important;
-            margin-left: -10px !important; margin-top: -10px !important;
+            background-color: #007bff;
+            border: 2px solid white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            width: 20px !important;
+            height: 20px !important;
+            margin-left: -10px !important; /* Vycentrování */
+            margin-top: -10px !important;
         }
-        
-        @media (max-width: 600px) {
-            #sidebar { width: 85%; position: absolute; margin-left: 0; transition: transform 0.3s; }
-            #sidebar.collapsed { transform: translateX(-100%); margin-left: 0; }
+        #findNearestButton {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2); /* Fialový gradient */
+            color: white;
+            width: 100%;
+            margin-bottom: 8px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(156, 39, 176, 0.3); /* Jemný fialový stín */
+        }
+        #findNearestButton:hover {
+            background: linear-gradient(135deg, #7B1FA2, #4A148C); /* Tmavší při najetí */
+            transform: translateY(-1px);
         }
     </style>
+
 </head>
 <body>
     <div id="container">
         <div id="sidebar">
-            <div class="sidebar-header">
+            <div class="header-row">
                 <h2>Alberty <span id="progress-counter">0/0</span></h2>
-                <div class="header-buttons">
-                    <button id="themeToggle" class="icon-btn" title="Noční režim">🌙</button>
-                    <button id="closeSidebar" class="icon-btn" title="Zavřít panel">✖</button>
-                </div>
+                <button id="themeToggle" title="Přepnout tmavý režim">🌙</button>
             </div>
 
-            <div class="sidebar-controls">
-                <div class="data-controls">
-                    <button id="exportBtn" class="data-btn">💾 Uložit</button>
-                    <button id="importBtn" class="data-btn">📂 Nahrát</button>
-                    <input type="file" id="importInput" style="display: none;" accept=".json">
-                </div>
-                <button id="resetButton">Resetovat stav</button>
+            <button id="findMeButton">🛰️ Najdi mě</button>
+            <div class="action-row">
+    <button id="findNearestButton">🗺️ Nejbližší další</button>
+</div>
+            <div id="data-controls">
+                <button id="exportBtn" class="data-btn">💾 Uložit</button>
+                <button id="importBtn" class="data-btn">📂 Nahrát</button>
+                <input type="file" id="importInput" style="display: none;" accept=".json">
+            </div>
+            <button id="resetButton">Resetovat stav</button>
 
-                <input type="text" id="searchInput" placeholder="🔍 Hledat..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);">
-
-                <div class="control-box">
-                    <span>Zobrazit:</span>
-                    <input type="checkbox" id="filterVisited" checked> <label for="filterVisited">Hotovo</label>
-                    <input type="checkbox" id="filterUnvisited" checked> <label for="filterUnvisited">Zbývá</label>
-                </div>
-                <div class="control-box">
-                    <span>Typ:</span>
-                    <input type="checkbox" id="filterHPM" checked> <label for="filterHPM">HPM 🔴</label>
-                    <input type="checkbox" id="filterSM" checked> <label for="filterSM">SM 🔵</label>
-                    <input type="checkbox" id="filterZruseno" checked> <label for="filterZruseno">Zruš ⚫</label>
-                </div>
-                 <div class="control-box">
-                    <span>Měřit od:</span>
-                    <input type="radio" id="startPraha" name="startPoint" value="praha" checked> <label for="startPraha">Praha</label>
-                    <input type="radio" id="startBrno" name="startPoint" value="brno"> <label for="startBrno">Brno</label>
-                </div>
-                
-                <button id="findMeButton">🛰️ Najdi mě</button>
-                <button id="findNearestButton">🗺️ Nejbližší cíl</button>
-
-                <div id="sort-controls" class="data-controls" style="margin-top: 10px;">
-                    <button id="sort-default" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Výchozí</button>
-                    <button id="sort-name-asc" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Název</button>
-                    <button id="sort-num-asc" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Číslo</button>
-                </div>
+            <div class="control-box">
+                <span>Zobrazit: </span>
+                <input type="checkbox" id="filterVisited" checked> <label for="filterVisited">Hotovo</label>
+                <input type="checkbox" id="filterUnvisited" checked> <label for="filterUnvisited">Zbývá</label>
             </div>
             
+            <div class="control-box">
+                <span>Typ: </span>
+                <input type="checkbox" id="filterHPM" checked> <label for="filterHPM">HPM 🔴</label>
+                <input type="checkbox" id="filterSM" checked> <label for="filterSM">SM 🔵</label>
+                <input type="checkbox" id="filterZruseno" checked> <label for="filterZruseno">Zruš ⚫</label>
+            </div>
+            
+            <div class="control-box">
+                <span>Měřit od:</span>
+                <input type="radio" id="startPraha" name="startPoint" value="praha" checked> <label for="startPraha">Praha</label>
+                <input type="radio" id="startBrno" name="startPoint" value="brno"> <label for="startBrno">Brno</label>
+            </div>
+
+            <div id="sort-controls">
+                <button id="sort-default">Výchozí</button>
+                <button id="sort-name-asc">Název</button>
+                <button id="sort-num-asc">Číslo</button>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="🔍 Hledat...">
             <div id="sidebar-content"></div> 
         </div>
 
         <div id="mapid">
-            <button id="openSidebar" class="map-btn" title="Otevřít menu">☰</button>
+            <button id="toggleSidebar">☰</button>
         </div>
     </div>
 
