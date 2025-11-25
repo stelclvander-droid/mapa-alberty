@@ -187,9 +187,9 @@ var defaultPlacesData = [
     { id: 177, lat: 49.789212, lng: 18.252084, name: "Ostrava - Dubina", storeNumber: "808", storeType: "HPM", visited: false },
     { id: 178, lat: 50.640201, lng: 13.840748, name: "Teplice", storeNumber: "810", storeType: "HPM", visited: false },
     { id: 179, lat: 50.072236, lng: 14.542289, name: "Praha - Štěrboholy", storeNumber: "812", storeType: "zrušeno", visited: false },
-    { id: 180, lat: 49.198357, lng: 16.621255, name: "Brno - Cejl PRODEJNA", storeNumber: "814-A", storeType: "HPM", visited: false },
+    { id: 180, lat: 49.199965933378486, lng: 16.62815951697964, name: "Brno - Cejl PRODEJNA", storeNumber: "814-A", storeType: "HPM", visited: false },
     { id: 181, lat: 49.200413, lng: 16.6279023, name: "Brno - Cejl SKLADY", storeNumber: "814-B", storeType: "HPM", visited: false },
-    { id: 182, lat: 48.8461692, lng: 16.0660108, name: "Znojmo", storeNumber: "818", storeType: "HPM", visited: false },
+    { id: 182, lat: 48.8461692, lng: 16.0660108, name: "Znojmo Brněnská", storeNumber: "818", storeType: "HPM", visited: false },
     { id: 183, lat: 50.2268558, lng: 12.8409924, name: "Karlovy Vary - Varyáda", storeNumber: "820", storeType: "HPM", visited: false },
     { id: 184, lat: 50.5262719, lng: 14.138725, name: "Litoměřice", storeNumber: "822", storeType: "HPM", visited: false },
     { id: 185, lat: 49.2026903, lng: 15.8852569, name: "Třebíč", storeNumber: "823", storeType: "HPM", visited: false },
@@ -215,8 +215,10 @@ var defaultPlacesData = [
     { id: 205, lat: 49.556956, lng: 17.7499057, name: "Hranice na Moravě", storeNumber: "685", storeType: "HPM", visited: false },
     { id: 206, lat: 50.1267205, lng: 14.4132025, name: "Praha - Trója", storeNumber: "761", storeType: "SM", visited: false },
     { id: 207, lat: 50.7357271, lng: 15.1609322, name: "Jablonec nad Nisou", storeNumber: "831", storeType: "HPM", visited: false },
-    { id: 208, lat: 49.5998679, lng: 18.012615, name: "Nový Jičín", storeNumber: "395", storeType: "HPM", visited: false }
-];
+    { id: 208, lat: 49.5998679, lng: 18.012615, name: "Nový Jičín", storeNumber: "395", storeType: "HPM", visited: false },
+    { id: 209, lat: 48.845934696647824, lng: 16.059193651641895, name: "Znojmo Vídeňská", storeNumber: "818", storeType: "HPM", visited: false },
+
+]; 49.199965933378486, 16.62815951697964
 
 var placesData = [];
 var userLocationMarker = null; 
