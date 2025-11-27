@@ -14,10 +14,12 @@
         :root {
             --bg-app: #f4f7f6; --bg-panel: #ffffff; --text-main: #333; --text-sec: #555;
             --border: #e0e0e0; --input-bg: #fff; --hover-bg: #f8f9fa; --shadow: rgba(0,0,0,0.1);
+            --accent: #2196F3;
         }
         body.dark-mode {
             --bg-app: #121212; --bg-panel: #1e1e1e; --text-main: #e0e0e0; --text-sec: #aaa;
             --border: #333; --input-bg: #2c2c2c; --hover-bg: #333; --shadow: rgba(0,0,0,0.5);
+            --accent: #64b5f6;
         }
 
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', sans-serif; color: var(--text-main); background: var(--bg-app); overflow: hidden; }
@@ -31,54 +33,53 @@
         }
         #sidebar.collapsed { margin-left: -360px; }
 
-        .sidebar-header { 
-            padding: 15px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); 
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        
-        .header-buttons { display: flex; gap: 8px; align-items: center; }
-        
-        /* Tlačítka v hlavičce */
+        .sidebar-header { padding: 15px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h2 { margin: 0; font-size: 22px; font-weight: 700; }
+        .header-buttons { display: flex; gap: 8px; }
+
         .icon-btn {
             background: transparent; border: 1px solid var(--border); color: var(--text-main);
-            width: 36px; height: 36px; border-radius: 8px; cursor: pointer; 
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; font-size: 20px;
             margin: 0; transition: background 0.2s;
         }
         .icon-btn:hover { background: var(--hover-bg); }
-        
-        /* Styl pro tlačítko menu v hlavičce (aby vypadalo jako to na mapě) */
-        #closeSidebar { 
-            font-size: 22px; 
-            border-color: transparent; /* V panelu vypadá lépe bez rámečku */
-        }
         #closeSidebar:hover { background: rgba(0,0,0,0.05); }
 
+        .stats-dashboard {
+            background-color: var(--hover-bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 12px; font-size: 13px;
+        }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+        .stat-main { font-weight: bold; color: var(--accent); font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 6px; }
+        .stat-sub { color: var(--text-sec); padding-left: 8px; }
+        .stat-val { font-weight: bold; color: var(--text-main); }
 
         .sidebar-controls { padding: 15px 20px; flex-shrink: 0; }
         #sidebar-content { flex-grow: 1; overflow-y: auto; padding: 10px 15px; background: var(--hover-bg); }
 
-        h2 { margin: 0; font-size: 20px; display: flex; align-items: center; }
-        #progress-counter { font-size: 12px; background: var(--hover-bg); padding: 4px 10px; border-radius: 20px; margin-left: 10px; }
-
-        /* --- 3. TLAČÍTKO NA MAPĚ (OTEVŘÍT) --- */
+        /* Tlačítko na mapě */
         #openSidebar {
-            position: absolute; 
-            top: 80px; left: 10px; z-index: 1500;
+            position: absolute; top: 80px; left: 10px; z-index: 1500;
             width: 36px; height: 36px; border-radius: 4px;
             background: var(--bg-panel); color: var(--text-main); border: 2px solid rgba(0,0,0,0.2);
-            font-size: 22px; display: none; /* Výchozí skryté (protože panel je otevřený) */
-            align-items: center; justify-content: center; cursor: pointer;
+            font-size: 22px; display: none; align-items: center; justify-content: center; cursor: pointer;
             box-shadow: 0 1px 5px rgba(0,0,0,0.4);
         }
         #openSidebar:hover { background: var(--hover-bg); }
 
-
-        /* --- 4. OSTATNÍ STYLY --- */
+        /* --- TLAČÍTKA --- */
         button { border: none; border-radius: 8px; padding: 10px; font-weight: 500; cursor: pointer; margin-bottom: 8px; }
         #findMeButton { background: #007bff; color: white; width: 100%; }
         #findNearestButton { background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; width: 100%; }
         #resetButton { background: var(--bg-panel); border: 1px solid #dc3545; color: #dc3545; width: 100%; }
+        
+        /* Tlačítko EDITACE */
+        #toggleEditMode { width: 100%; font-weight: bold; transition: background 0.3s; color: white; }
+        .edit-on { background-color: #4CAF50; } 
+        .edit-off { background-color: #607D8B; } 
+
         .data-controls { display: flex; gap: 5px; margin-bottom: 10px; }
         .data-btn { flex: 1; background: #6c757d; color: white; padding: 8px; }
 
@@ -93,8 +94,57 @@
         .distance-result { font-size: 12px; color: #007bff; font-weight: bold; margin: 0 8px; }
 
         #mapid { flex: 1; height: 100%; position: relative; z-index: 1; }
-        .leaflet-bar a { border-radius: 4px !important; width: 36px !important; height: 36px !important; line-height: 36px !important; color: #333 !important; font-weight: bold !important; }
+        .leaflet-bar a { border-radius: 4px !important; width: 34px !important; height: 34px !important; line-height: 34px !important; color: #333 !important; font-weight: bold !important; }
+        .gps-pulse { background-color: #007bff; border: 2px solid white; border-radius: 50%; animation: pulse 2s infinite; width: 20px !important; height: 20px !important; margin-left: -10px !important; margin-top: -10px !important; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
+
+        /* --- NOVÉ STYLY PRO TLAČÍTKA V POPUPU --- */
+        .popup-btn-row { 
+            display: flex; 
+            gap: 8px; /* Mezera mezi tlačítky */
+            margin-top: 12px;
+        }
         
+        /* Společný styl pro obě tlačítka */
+        .popup-btn {
+            flex: 1; /* Obě zaberou stejně místa (50:50) */
+            padding: 8px 0; /* Stejná výška */
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex; /* Zarovnání textu na střed */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .btn-nav { 
+            background-color: #007bff; 
+            color: white !important; /* Vynutit bílou pro odkaz */
+        }
+        .btn-nav:hover { background-color: #0056b3; }
+
+        .btn-measure { 
+            background-color: #FFC107; 
+            color: #212529; 
+            border-color: #ffc107;
+        }
+        .btn-measure:hover { background-color: #e0a800; }
+
+        .popup-measure-result { 
+            display: block; 
+            font-size: 13px; 
+            color: #007bff; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            text-align: center; 
+        }
+
         @media (max-width: 600px) {
             #sidebar { width: 85%; position: absolute; margin-left: 0; transition: margin-left 0.3s; }
             #sidebar.collapsed { margin-left: -100%; }
@@ -106,13 +156,18 @@
         
         <div id="sidebar">
             <div class="sidebar-header">
-                <h2>Alberty <span id="progress-counter">0/0</span></h2>
-                
-                <div class="header-buttons">
-                    <!-- Měsíc pro noční režim -->
-                    <button id="themeToggle" class="icon-btn" title="Noční režim">🌙</button>
-                    <!-- Hamburger pro zavření (místo křížku) -->
-                    <button id="closeSidebar" class="icon-btn" title="Skrýt panel">☰</button>
+                <div class="header-top">
+                    <h2>Alberty</h2>
+                    <div class="header-buttons">
+                        <button id="themeToggle" class="icon-btn" title="Noční režim">🌙</button>
+                        <button id="closeSidebar" class="icon-btn" title="Skrýt panel">☰</button>
+                    </div>
+                </div>
+                <div class="stats-dashboard">
+                    <div class="stat-row stat-main"><span>Navštíveno:</span> <span class="stat-val" id="stat-visited">0</span></div>
+                    <div class="stat-row"><span>Celkem (aktivní):</span> <span class="stat-val" id="stat-total">0</span></div>
+                    <div class="stat-row stat-sub"><span>z toho SM:</span> <span class="stat-val" id="stat-sm">0</span></div>
+                    <div class="stat-row stat-sub"><span>z toho HPM:</span> <span class="stat-val" id="stat-hpm">0</span></div>
                 </div>
             </div>
 
@@ -122,9 +177,13 @@
                     <button id="importBtn" class="data-btn">📂 Nahrát</button>
                     <input type="file" id="importInput" style="display: none;" accept=".json">
                 </div>
+                
                 <button id="resetButton">Resetovat stav</button>
+                
+                <button id="toggleEditMode" class="edit-on">✏️ Změny: POVOLENY</button>
 
-                <input type="text" id="searchInput" placeholder="🔍 Hledat..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);">
+                <button id="findMeButton">🛰️ Najdi mě</button>
+                <button id="findNearestButton">🗺️ Nejbližší cíl</button>
 
                 <div class="control-box">
                     <span>Zobrazit:</span>
@@ -142,25 +201,22 @@
                     <input type="radio" id="startPraha" name="startPoint" value="praha" checked> <label for="startPraha">Praha</label>
                     <input type="radio" id="startBrno" name="startPoint" value="brno"> <label for="startBrno">Brno</label>
                 </div>
-                
-                <button id="findMeButton">🛰️ Najdi mě</button>
-                <button id="findNearestButton">🗺️ Nejbližší cíl</button>
 
                 <div id="sort-controls" class="data-controls" style="margin-top: 10px;">
                     <button id="sort-default" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Výchozí</button>
                     <button id="sort-name-asc" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Název</button>
                     <button id="sort-num-asc" class="data-btn" style="background:var(--bg-panel); color:var(--text-main); border:1px solid var(--border);">Číslo</button>
                 </div>
+
+                <input type="text" id="searchInput" placeholder="🔍 Hledat..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-top:10px;margin-bottom:0;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);">
             </div>
             
             <div id="sidebar-content"></div> 
         </div>
 
         <div id="mapid">
-            <!-- TLAČÍTKO NA MAPĚ (Viditelné jen když je panel zavřený) -->
             <button id="openSidebar" class="map-btn" title="Zobrazit panel">☰</button>
         </div>
-
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
